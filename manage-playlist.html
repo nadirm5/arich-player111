@@ -3,1438 +3,1499 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>ARICH IPTV — Panel</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' stop-color='%237B2FFF'/><stop offset='100%25' stop-color='%23FF2D55'/></linearGradient></defs><rect width='100' height='100' rx='22' fill='url(%23g)'/><text y='.9em' font-size='70' x='15'>📡</text></svg>">
+<title>ARICH IPTV — Gestion des playlists</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
 :root {
-  --v: #7B2FFF; --vd: #5a1fd4; --r: #FF2D55; --rd: #cc0033;
-  --bg: #07070f; --bg2: #0c0c1a; --bg3: #111126;
-  --s: rgba(255,255,255,0.04); --s2: rgba(255,255,255,0.08);
-  --b: rgba(255,255,255,0.08); --b2: rgba(255,255,255,0.14);
-  --t: #fff; --t2: rgba(255,255,255,0.55); --t3: rgba(255,255,255,0.28);
-  --g: #00e676; --gold: #ffd740; --info: #29b6f6;
-  --blur: blur(20px) saturate(180%);
-  --r8: 8px; --r12: 12px; --r16: 16px; --r24: 24px;
-  --tr: all 0.22s cubic-bezier(.4,0,.2,1);
-  --sb: 260px;
+  --bg: #07090f;
+  --bg2: #0c0f1a;
+  --surface: rgba(255,255,255,0.038);
+  --surface2: rgba(255,255,255,0.055);
+  --border: rgba(255,255,255,0.09);
+  --border2: rgba(255,255,255,0.14);
+  --accent: #7c8fff;
+  --accent2: #b197fc;
+  --accent3: #38d9f5;
+  --gradient: linear-gradient(135deg, #7c8fff 0%, #b197fc 100%);
+  --gradient2: linear-gradient(135deg, #38d9f5 0%, #7c8fff 100%);
+  --text: #eeeef5;
+  --text-sub: rgba(238,238,245,0.52);
+  --text-muted: rgba(238,238,245,0.32);
+  --success: #36d9a0;
+  --error: #ff6b8a;
+  --warn: #fbbf24;
+  --nav-h: 64px;
+  --sidebar-w: 240px;
+  --radius: 18px;
+  --radius-sm: 12px;
+  --ez: cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
-body{font-family:'DM Sans','Syne',system-ui,sans-serif;word-break:break-word;background:var(--bg);color:var(--t);min-height:100vh;overflow-x:hidden}
 
-/* ── BG ── */
-.bg-orbs{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
-.bg-orbs::before{content:'';position:absolute;top:-20%;left:-10%;width:60%;height:60%;background:radial-gradient(ellipse,rgba(123,47,255,.1) 0%,transparent 70%);animation:orbFloat 14s ease-in-out infinite alternate}
-.bg-orbs::after{content:'';position:absolute;bottom:-20%;right:-10%;width:50%;height:50%;background:radial-gradient(ellipse,rgba(255,45,85,.07) 0%,transparent 70%);animation:orbFloat 18s ease-in-out infinite alternate-reverse}
-@keyframes orbFloat{from{transform:translate(0,0) scale(1)}to{transform:translate(5%,7%) scale(1.1)}}
-.grain{position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.02;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:128px}
-
-/* ── LAYOUT ── */
-#app{position:relative;z-index:2;display:flex;min-height:100vh}
-
-/* ── SIDEBAR ── */
-.sidebar{width:var(--sb);min-height:100vh;background:rgba(7,7,15,.9);backdrop-filter:var(--blur);border-right:1px solid var(--b);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;transition:transform .3s cubic-bezier(.4,0,.2,1)}
-.sb-logo{padding:24px 20px;border-bottom:1px solid var(--b);display:flex;align-items:center;gap:12px}
-.logo-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--v),var(--r));border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 20px rgba(123,47,255,.4);flex-shrink:0}
-.logo-text strong{display:block;font-weight:800;font-size:15px;background:linear-gradient(90deg,var(--v),var(--r));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:1.5px}
-.logo-text span{font-size:10px;color:var(--t3);letter-spacing:.5px}
-.sb-device{margin:12px 14px 6px;padding:11px 13px;background:var(--s);border:1px solid var(--b);border-radius:var(--r12);display:none}
-.sb-device.show{display:block}
-.sb-device .mac{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--v);letter-spacing:.8px;word-break:break-all}
-.sb-device .key{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--t);letter-spacing:3px;margin-top:2px}
-.sb-nav{flex:1;padding:6px 10px;overflow-y:auto}
-.nav-lbl{padding:10px 10px 5px;font-size:9px;font-weight:700;letter-spacing:2px;color:var(--t3);text-transform:uppercase}
-.nav-item{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:var(--r12);cursor:pointer;transition:var(--tr);color:var(--t2);font-size:13px;font-weight:600;user-select:none;margin-bottom:2px;border:1px solid transparent}
-.nav-item:hover{background:var(--s2);color:var(--t)}
-.nav-item.active{background:linear-gradient(135deg,rgba(123,47,255,.18),rgba(255,45,85,.08));color:var(--t);border-color:rgba(123,47,255,.3)}
-.nav-icon{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:14px;background:var(--s);flex-shrink:0}
-.nav-item.active .nav-icon{background:linear-gradient(135deg,var(--v),var(--r));box-shadow:0 3px 10px rgba(123,47,255,.3)}
-.nav-badge{margin-left:auto;background:var(--r);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:20px}
-.sb-footer{padding:10px;border-top:1px solid var(--b)}
-.logout-btn{display:flex;align-items:center;gap:9px;width:100%;padding:9px 12px;background:rgba(255,45,85,.08);border:1px solid rgba(255,45,85,.2);border-radius:10px;color:var(--r);font-size:12px;font-weight:700;cursor:pointer;transition:var(--tr);font-family:inherit}
-.logout-btn:hover{background:rgba(255,45,85,.15)}
-
-/* ── MOBILE TOGGLE ── */
-.mob-toggle{display:none;position:fixed;top:14px;left:14px;z-index:200;width:38px;height:38px;background:var(--bg3);border:1px solid var(--b2);border-radius:10px;align-items:center;justify-content:center;cursor:pointer;font-size:18px}
-.sidebar-overlay{display:none;position:fixed;inset:0;z-index:99;background:rgba(0,0,0,.6);backdrop-filter:blur(4px)}
-
-/* ── MAIN ── */
-.main{margin-left:var(--sb);flex:1;min-height:100vh;display:flex;flex-direction:column}
-.topbar{position:sticky;top:0;z-index:50;background:rgba(7,7,15,.85);backdrop-filter:var(--blur);border-bottom:1px solid var(--b);padding:0 28px;height:62px;display:flex;align-items:center;justify-content:space-between}
-.topbar-title{font-size:17px;font-weight:800;letter-spacing:-.2px}
-.topbar-sub{font-size:11px;color:var(--t2);margin-top:1px}
-.topbar-actions{display:flex;align-items:center;gap:10px}
-.topbar-btn{width:34px;height:34px;background:var(--s);border:1px solid var(--b);border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--tr);font-size:15px}
-.topbar-btn:hover{background:var(--s2)}
-.admin-badge{padding:4px 10px;background:linear-gradient(135deg,var(--v),var(--r));border-radius:20px;font-size:10px;font-weight:800;letter-spacing:1px}
-.content{flex:1;padding:24px 28px;max-width:1400px;width:100%}
-
-/* ── SECTIONS ── */
-.section{display:none;animation:fadeUp .3s cubic-bezier(.4,0,.2,1)}
-.section.active{display:block}
-@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-
-/* ── CARDS ── */
-.card{background:rgba(255,255,255,.03);backdrop-filter:var(--blur);border:1px solid var(--b);border-radius:var(--r16);padding:20px;position:relative;overflow:hidden}
-.card::before{content:'';position:absolute;inset:0;border-radius:inherit;background:linear-gradient(135deg,rgba(255,255,255,.03) 0%,transparent 60%);pointer-events:none}
-.card-title{font-size:12px;font-weight:700;color:var(--t2);letter-spacing:.5px;margin-bottom:6px}
-.card-val{font-size:30px;font-weight:800;letter-spacing:-1px;line-height:1}
-.card-sub{font-size:11px;color:var(--t3);margin-top:6px;display:flex;align-items:center;gap:4px}
-.card-sub.up{color:var(--g)} .card-sub.warn{color:var(--gold)} .card-sub.danger{color:var(--r)}
-
-/* ── GRIDS ── */
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
-
-/* ── SECTION HEADER ── */
-.sh{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;gap:12px;flex-wrap:wrap}
-.sh h2{font-size:19px;font-weight:800;letter-spacing:-.3px}
-.sh p{font-size:12px;color:var(--t2);margin-top:3px}
-
-/* ── TABLE ── */
-.table-wrap{overflow-x:auto;border-radius:var(--r12);border:1px solid var(--b)}
-table{width:100%;border-collapse:collapse;font-size:12px}
-thead tr{background:rgba(255,255,255,.03);border-bottom:1px solid var(--b)}
-thead th{padding:10px 14px;text-align:left;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--t3);white-space:nowrap}
-tbody tr{border-bottom:1px solid rgba(255,255,255,.04);transition:var(--tr)}
-tbody tr:last-child{border-bottom:none}
-tbody tr:hover{background:var(--s)}
-tbody td{padding:12px 14px;color:var(--t2);vertical-align:middle}
-tbody td:first-child{color:var(--t)}
-
-/* ── BADGES ── */
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:9px;font-weight:800;letter-spacing:.5px;text-transform:uppercase}
-.b-active{background:rgba(0,230,118,.1);color:#00e676;border:1px solid rgba(0,230,118,.2)}
-.b-trial{background:rgba(255,215,64,.1);color:#ffd740;border:1px solid rgba(255,215,64,.2)}
-.b-expired{background:rgba(255,45,85,.1);color:#ff2d55;border:1px solid rgba(255,45,85,.2)}
-.b-suspended{background:rgba(255,152,0,.1);color:#ff9800;border:1px solid rgba(255,152,0,.2)}
-.b-banned{background:rgba(255,45,85,.15);color:#ff2d55;border:1px solid rgba(255,45,85,.3)}
-.b-dot::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;display:block}
-
-/* ── BUTTONS ── */
-.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--r12);font-size:12px;font-weight:700;cursor:pointer;transition:var(--tr);border:none;outline:none;font-family:inherit;white-space:nowrap}
-.btn-primary{background:linear-gradient(135deg,var(--v),var(--r));color:#fff;box-shadow:0 4px 14px rgba(123,47,255,.3)}
-.btn-primary:hover{box-shadow:0 6px 20px rgba(123,47,255,.5);transform:translateY(-1px)}
-.btn-ghost{background:var(--s);border:1px solid var(--b);color:var(--t2)}
-.btn-ghost:hover{background:var(--s2);color:var(--t)}
-.btn-danger{background:rgba(255,45,85,.1);border:1px solid rgba(255,45,85,.25);color:var(--r)}
-.btn-danger:hover{background:rgba(255,45,85,.2)}
-.btn-success{background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.25);color:var(--g)}
-.btn-success:hover{background:rgba(0,230,118,.2)}
-.btn-sm{padding:5px 11px;font-size:10px;border-radius:8px}
-.btn-icon{width:30px;height:30px;padding:0;justify-content:center;font-size:13px}
-.btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
-
-/* ── FORMS ── */
-.form-group{margin-bottom:14px}
-.form-label{display:block;font-size:11px;font-weight:700;letter-spacing:.5px;color:var(--t2);margin-bottom:7px}
-.form-input{width:100%;padding:11px 14px;background:rgba(255,255,255,.05);border:1px solid var(--b);border-radius:var(--r12);color:var(--t);font-size:12px;font-family:inherit;transition:var(--tr);outline:none}
-.form-input:focus{border-color:var(--v);background:rgba(123,47,255,.06);box-shadow:0 0 0 3px rgba(123,47,255,.1)}
-.form-input::placeholder{color:var(--t3)}
-.mono{font-family:'JetBrains Mono',monospace;letter-spacing:1px}
-.form-select{width:100%;padding:11px 14px;background:rgba(255,255,255,.05);border:1px solid var(--b);border-radius:var(--r12);color:var(--t);font-size:12px;font-family:inherit;outline:none;cursor:pointer;appearance:none}
-.form-select option{background:var(--bg3)}
-.radio-group{display:flex;gap:8px}
-.radio-card{flex:1;padding:10px 14px;background:var(--s);border:2px solid var(--b);border-radius:var(--r12);cursor:pointer;transition:var(--tr);text-align:center;font-size:12px;font-weight:700}
-.radio-card:hover{border-color:rgba(123,47,255,.4)}
-.radio-card.selected{border-color:var(--v);background:rgba(123,47,255,.08);color:var(--v)}
-
-/* ── SEARCH ── */
-.search-wrap{position:relative;flex:1;max-width:320px}
-.search-wrap input{padding-left:36px}
-.search-wrap::before{content:'🔍';position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:13px;pointer-events:none}
-
-/* ── MODAL ── */
-.modal-overlay{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .25s}
-.modal-overlay.open{opacity:1;pointer-events:auto}
-.modal{background:var(--bg3);border:1px solid var(--b2);border-radius:var(--r24);padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;transform:scale(.96) translateY(8px);transition:transform .25s cubic-bezier(.4,0,.2,1)}
-.modal-overlay.open .modal{transform:scale(1) translateY(0)}
-.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.modal-title{font-size:17px;font-weight:800}
-.modal-close{width:30px;height:30px;background:var(--s);border:1px solid var(--b);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--tr);font-size:16px;color:var(--t2)}
-.modal-close:hover{background:var(--s2);color:var(--t)}
-.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
-
-/* ── TOAST ── */
-#toasts{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:7px;pointer-events:none}
-.toast{display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(18,18,38,.97);border:1px solid var(--b2);border-radius:14px;backdrop-filter:blur(20px);font-size:12px;font-weight:600;min-width:240px;max-width:340px;box-shadow:0 8px 28px rgba(0,0,0,.5);transform:translateX(110%);transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .3s;opacity:0;pointer-events:auto}
-.toast.show{transform:translateX(0);opacity:1}
-.toast.hide{transform:translateX(110%);opacity:0}
-.t-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
-.toast-success .t-icon{background:rgba(0,230,118,.12)}
-.toast-error   .t-icon{background:rgba(255,45,85,.12)}
-.toast-info    .t-icon{background:rgba(123,47,255,.12)}
-.toast-warning .t-icon{background:rgba(255,215,64,.12)}
-.t-text strong{display:block;margin-bottom:1px}
-.t-text small{color:var(--t3);font-size:10px}
-
-/* ── LOGIN ── */
-#login-screen{position:fixed;inset:0;z-index:500;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px}
-#login-screen.hidden{display:none}
-.login-box{width:100%;max-width:400px;animation:fadeUp .5s cubic-bezier(.4,0,.2,1)}
-.login-logo{text-align:center;margin-bottom:32px}
-.glow-ring{width:68px;height:68px;margin:0 auto 14px;background:linear-gradient(135deg,var(--v),var(--r));border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 0 40px rgba(123,47,255,.5);position:relative}
-.glow-ring::after{content:'';position:absolute;inset:-4px;border-radius:24px;border:1px solid rgba(123,47,255,.4);animation:pulse 2s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:.3;transform:scale(1)}50%{opacity:.7;transform:scale(1.03)}}
-.login-logo h1{font-size:26px;font-weight:800;letter-spacing:2px;background:linear-gradient(90deg,var(--v),var(--r));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.login-logo p{color:var(--t3);font-size:12px;margin-top:3px}
-.login-card{background:rgba(255,255,255,.04);border:1px solid var(--b2);border-radius:var(--r24);padding:28px;backdrop-filter:blur(20px)}
-.login-tabs{display:flex;gap:3px;margin-bottom:20px;background:var(--s);padding:3px;border-radius:10px}
-.login-tab{flex:1;padding:7px;text-align:center;border-radius:8px;cursor:pointer;font-size:11px;font-weight:700;color:var(--t2);transition:var(--tr)}
-.login-tab.active{background:linear-gradient(135deg,var(--v),var(--r));color:#fff}
-.login-submit{width:100%;padding:13px;background:linear-gradient(135deg,var(--v),var(--r));color:#fff;border:none;border-radius:var(--r12);font-size:13px;font-weight:800;letter-spacing:.5px;cursor:pointer;transition:var(--tr);font-family:inherit}
-.login-submit:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(123,47,255,.4)}
-.login-submit:disabled{opacity:.6;cursor:not-allowed;transform:none}
-.login-divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--t3);font-size:10px}
-.login-divider::before,.login-divider::after{content:'';flex:1;height:1px;background:var(--b)}
-
-/* ── STAT CARD GLOW ── */
-.stat-card .glow{position:absolute;top:-15px;right:-15px;width:70px;height:70px;border-radius:50%;filter:blur(28px);opacity:.25}
-.stat-card .s-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:10px}
-
-/* ── DEVICE CARD (admin) ── */
-.user-row{cursor:pointer}
-.user-row:hover td{color:var(--t)!important}
-.action-cell{white-space:nowrap;display:flex;gap:5px}
-
-/* ── DEVICE HERO ── */
-.device-hero{background:linear-gradient(135deg,rgba(123,47,255,.1),rgba(255,45,85,.05));border:1px solid rgba(123,47,255,.2);border-radius:var(--r16);padding:28px;text-align:center;margin-bottom:20px}
-.device-mac{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;letter-spacing:3px;color:var(--v);margin:6px 0;word-break:break-all}
-.device-key{font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:800;letter-spacing:6px;background:linear-gradient(90deg,var(--v),var(--r));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-
-/* ── BILLING ── */
-.plan-card{border:1px solid var(--b);border-radius:var(--r16);padding:24px;transition:var(--tr);position:relative;overflow:hidden}
-.plan-card.rec{border-color:var(--v);background:linear-gradient(135deg,rgba(123,47,255,.08),rgba(255,45,85,.04))}
-.rec-badge{position:absolute;top:14px;right:14px;background:linear-gradient(135deg,var(--v),var(--r));color:#fff;font-size:9px;font-weight:800;padding:3px 9px;border-radius:20px}
-.plan-price{font-size:36px;font-weight:800;line-height:1;margin:14px 0 3px}
-.plan-price sup{font-size:16px;font-weight:600;vertical-align:top;margin-top:6px}
-.plan-price span{font-size:14px;font-weight:400;color:var(--t3)}
-.feat-list{list-style:none;margin-top:16px}
-.feat-list li{padding:7px 0;font-size:12px;color:var(--t2);border-bottom:1px solid rgba(255,255,255,.04);display:flex;align-items:center;gap:7px}
-.feat-list li:last-child{border:none}
-.fi{color:var(--g);font-size:12px} .fi.no{color:var(--r)}
-
-/* ── TIMELINE ── */
-.timeline{position:relative}
-.timeline::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:1px;background:var(--b)}
-.tl-item{display:flex;gap:14px;padding:10px 0}
-.tl-dot{width:28px;height:28px;border-radius:50%;background:var(--s);border:1px solid var(--b);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;z-index:1;position:relative}
-.tl-date{font-size:10px;color:var(--t3);margin-top:2px}
-
-/* ── LOADING ── */
-.spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.1);border-top-color:var(--v);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
-@keyframes spin{to{transform:rotate(360deg)}}
-.loading-center{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;gap:14px;color:var(--t3)}
-.empty{text-align:center;padding:48px 20px;color:var(--t3)}
-.empty .ei{font-size:40px;margin-bottom:14px;opacity:.35}
-.empty h3{font-size:15px;font-weight:700;color:var(--t2);margin-bottom:6px}
-.empty p{font-size:12px;margin-bottom:16px}
-
-/* ── PLAYLISTS ── */
-.pl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
-.pl-card{border:1px solid var(--b);border-radius:var(--r12);padding:18px;background:var(--s);transition:var(--tr);cursor:pointer}
-.pl-card:hover{border-color:rgba(123,47,255,.3);background:var(--s2);transform:translateY(-2px)}
-.pl-name{font-size:14px;font-weight:700;margin-bottom:3px}
-.pl-host{font-size:10px;color:var(--t3);font-family:'JetBrains Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pl-stats{display:flex;gap:14px;margin-top:12px}
-.pl-stat-val{font-size:16px;font-weight:800}
-.pl-stat-lbl{font-size:9px;color:var(--t3);font-weight:600;margin-top:1px}
-.add-pl{border:2px dashed var(--b);border-radius:var(--r12);padding:36px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:var(--tr);color:var(--t3)}
-.add-pl:hover{border-color:var(--v);color:var(--v);background:rgba(123,47,255,.04)}
-
-/* ── PAGINATION ── */
-.pagination{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:16px}
-.page-btn{width:32px;height:32px;background:var(--s);border:1px solid var(--b);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--tr);font-size:12px;font-weight:700;color:var(--t2)}
-.page-btn:hover{background:var(--s2);color:var(--t)}
-.page-btn.active{background:linear-gradient(135deg,var(--v),var(--r));color:#fff;border-color:transparent}
-.page-btn:disabled{opacity:.3;cursor:not-allowed}
-.page-info{font-size:11px;color:var(--t3);padding:0 8px}
-
-/* ── CHART ── */
-.chart-wrap{position:relative;height:220px}
-
-/* ── RESPONSIVE ── */
-@media(max-width:768px){.content{overflow-x:hidden}
-  :root{--sb:0px}
-  .sidebar{transform:translateX(-260px);width:260px}
-  .sidebar.mob-open{transform:translateX(0)}
-  .sidebar-overlay.show{display:block}
-  .mob-toggle{display:flex}
-  .main{margin-left:0}
-  .topbar{padding:0 16px 0 62px}
-  .content{padding:16px}
-  .g2,.g3{grid-template-columns:1fr}
-  .stats-grid{grid-template-columns:repeat(2,1fr)}
-  .device-key{font-size:22px;letter-spacing:3px}
-  .device-mac{font-size:15px}
+html { height: 100%; }
+body {
+  min-height: 100%; background: var(--bg);
+  color: var(--text); font-family: 'DM Sans', sans-serif;
+  overflow-x: hidden; -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
 }
-@media(max-width:420px){
-  .stats-grid{grid-template-columns:1fr 1fr}
-  .card-val{font-size:24px}
+
+/* ═════════════════ BACKGROUND ══════════════════ */
+.bg-scene { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.orb {
+  position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.18;
+  animation: orbDrift var(--d,14s) ease-in-out infinite alternate;
 }
+.orb-1 { width: 50vmax; height: 50vmax; background: radial-gradient(circle, #7c8fff, transparent 65%); top:-15vmax; left:-10vmax; --d:16s; }
+.orb-2 { width: 40vmax; height: 40vmax; background: radial-gradient(circle, #b197fc, transparent 65%); bottom:-10vmax; right:-8vmax; --d:12s; animation-delay:-5s; }
+@keyframes orbDrift { to { transform: translate(20px,25px) scale(1.04); } }
+
+.grain {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: 0.02;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 250px;
+}
+
+/* ═════════════════ NAVBAR ══════════════════════ */
+.navbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  height: var(--nav-h);
+  background: rgba(7,9,15,0.75);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 24px; gap: 16px;
+}
+.nav-logo {
+  display: flex; align-items: center; gap: 10px; text-decoration: none;
+  flex-shrink: 0;
+}
+.nav-gem {
+  width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+  background: var(--gradient);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; color: #fff;
+  box-shadow: 0 4px 18px rgba(124,143,255,0.4);
+}
+.nav-brand {
+  font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700;
+  letter-spacing: -0.025em; color: var(--text); white-space: nowrap;
+}
+.nav-brand em { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-style: normal; }
+
+.nav-spacer { flex: 1; }
+
+.nav-links { display: flex; align-items: center; gap: 8px; }
+.nav-link {
+  color: var(--text-sub); text-decoration: none; font-size: 14px; font-weight: 500;
+  padding: 7px 14px; border-radius: 9px;
+  transition: color 0.2s, background 0.2s;
+  white-space: nowrap;
+}
+.nav-link:hover, .nav-link.active { color: var(--text); background: var(--surface2); }
+
+.nav-auth {
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+}
+.btn-nav {
+  background: var(--gradient); color: #fff;
+  border: none; border-radius: 9px; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
+  padding: 8px 16px; white-space: nowrap;
+  text-decoration: none; display: inline-flex; align-items: center;
+  transition: opacity 0.2s, transform 0.2s;
+  box-shadow: 0 4px 18px rgba(124,143,255,0.3);
+}
+.btn-nav:hover { opacity: 0.9; transform: translateY(-1px); }
+
+/* Mobile nav */
+.nav-hamburger {
+  display: none; background: none; border: none; cursor: pointer;
+  color: var(--text); padding: 6px; border-radius: 8px;
+  transition: background 0.2s;
+}
+.nav-hamburger:hover { background: var(--surface2); }
+
+/* User badge */
+.user-badge {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 10px 5px 5px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 999px; cursor: pointer;
+  transition: background 0.2s;
+}
+.user-badge:hover { background: var(--surface2); }
+.user-avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--gradient);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 600; color: #fff; flex-shrink: 0;
+}
+.user-email { font-size: 13px; color: var(--text-sub); max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.user-menu {
+  position: absolute; top: calc(var(--nav-h) + 8px); right: 16px;
+  background: rgba(12,15,26,0.95);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 6px; min-width: 180px;
+  display: none;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+  animation: dropIn 0.2s var(--ez) both;
+  z-index: 200;
+}
+.user-menu.open { display: block; }
+@keyframes dropIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:none; } }
+.menu-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: 8px; cursor: pointer;
+  font-size: 14px; color: var(--text-sub);
+  transition: color 0.15s, background 0.15s;
+  border: none; background: none; width: 100%; text-align: left;
+  font-family: 'DM Sans', sans-serif;
+}
+.menu-item:hover { color: var(--text); background: var(--surface2); }
+.menu-item.danger:hover { color: var(--error); background: rgba(255,107,138,0.08); }
+.menu-divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+/* ═════════════════ LAYOUT ══════════════════════ */
+.layout {
+  position: relative; z-index: 2;
+  padding-top: var(--nav-h);
+  min-height: 100vh;
+  display: flex;
+}
+
+.sidebar {
+  width: var(--sidebar-w); flex-shrink: 0;
+  position: fixed; top: var(--nav-h); left: 0; bottom: 0;
+  padding: 24px 12px;
+  background: rgba(7,9,15,0.6);
+  border-right: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  overflow-y: auto; overflow-x: hidden;
+  display: flex; flex-direction: column; gap: 4px;
+  transition: transform 0.3s var(--ez);
+}
+
+.sidebar-section {
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text-muted);
+  padding: 8px 12px 4px;
+}
+
+.s-link {
+  display: flex; align-items: center; gap: 11px;
+  padding: 10px 12px; border-radius: 10px; cursor: pointer;
+  font-size: 14px; color: var(--text-sub); font-weight: 500;
+  transition: color 0.18s, background 0.18s;
+  border: none; background: none; width: 100%; text-align: left;
+  font-family: 'DM Sans', sans-serif; text-decoration: none;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.s-link:hover { color: var(--text); background: var(--surface); }
+.s-link.active {
+  color: var(--accent); background: rgba(124,143,255,0.12);
+  font-weight: 500;
+}
+.s-link svg { flex-shrink: 0; opacity: 0.7; }
+.s-link.active svg { opacity: 1; }
+
+.s-badge {
+  margin-left: auto; font-size: 11px; font-weight: 600;
+  padding: 2px 7px; border-radius: 20px;
+  background: rgba(124,143,255,0.18); color: var(--accent);
+  flex-shrink: 0;
+}
+
+.main {
+  flex: 1; margin-left: var(--sidebar-w);
+  padding: 32px;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* ═════════════════ RESPONSIVE ══════════════════ */
+@media (max-width: 900px) {
+  .sidebar {
+    transform: translateX(-100%);
+    z-index: 90;
+    width: 260px;
+  }
+  .sidebar.open { transform: translateX(0); }
+  .main { margin-left: 0; }
+  .nav-hamburger { display: flex; }
+  .sidebar-overlay {
+    position: fixed; inset: 0; z-index: 89;
+    background: rgba(0,0,0,0.5); display: none;
+    backdrop-filter: blur(2px);
+  }
+  .sidebar-overlay.show { display: block; }
+}
+
+@media (max-width: 600px) {
+  .main { padding: 20px 14px; }
+  .navbar { padding: 0 14px; }
+  .user-email { display: none; }
+}
+
+/* ═════════════════ SECTIONS (tabs content) ══════ */
+.section { display: none; animation: secIn 0.3s var(--ez) both; }
+.section.active { display: block; }
+@keyframes secIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+
+/* ═════════════════ PAGE HEADER ══════════════════ */
+.page-header {
+  margin-bottom: 28px;
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+}
+.page-title {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(22px, 4vw, 28px);
+  font-weight: 700; letter-spacing: -0.03em;
+}
+.page-sub { font-size: 14px; color: var(--text-sub); margin-top: 4px; }
+
+/* ═════════════════ CARDS & GRID ════════════════ */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 24px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
+.grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+
+/* ═════════════════ STAT CARDS ══════════════════ */
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px 24px;
+  display: flex; flex-direction: column; gap: 10px;
+  position: relative; overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.stat-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+.stat-card::before {
+  content: ''; position: absolute; inset: 0;
+  background: var(--card-gradient, var(--gradient));
+  opacity: 0.04; pointer-events: none;
+}
+
+.stat-icon {
+  width: 40px; height: 40px; border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 19px;
+  background: rgba(124,143,255,0.12);
+}
+.stat-value {
+  font-family: 'Syne', sans-serif;
+  font-size: 32px; font-weight: 700; letter-spacing: -0.04em;
+  line-height: 1;
+}
+.stat-label { font-size: 13px; color: var(--text-sub); font-weight: 400; }
+.stat-delta {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; font-weight: 500; padding: 3px 8px; border-radius: 6px;
+  width: fit-content;
+}
+.stat-delta.up { color: var(--success); background: rgba(54,217,160,0.12); }
+.stat-delta.neutral { color: var(--text-muted); background: var(--surface2); }
+
+/* ═════════════════ PLAYLIST TABLE ══════════════ */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table { width: 100%; border-collapse: collapse; min-width: 460px; }
+th {
+  font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--text-muted);
+  padding: 10px 14px; text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+td {
+  padding: 13px 14px; font-size: 14px; color: var(--text-sub);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  word-break: break-word;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,0.02); color: var(--text); }
+
+.td-name { color: var(--text); font-weight: 500; max-width: 200px; word-break: break-all; }
+.td-url  { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; font-family: 'DM Mono', monospace; }
+
+/* status badges */
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11.5px; font-weight: 500; padding: 3px 9px; border-radius: 20px;
+  white-space: nowrap;
+}
+.badge.active  { background: rgba(54,217,160,0.12); color: var(--success); }
+.badge.expired { background: rgba(255,107,138,0.12); color: var(--error); }
+.badge.pending { background: rgba(251,191,36,0.12); color: var(--warn); }
+
+/* ═════════════════ BUTTONS ════════════════════ */
+.btn {
+  border: none; border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
+  padding: 10px 18px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  transition: transform 0.18s var(--ez), box-shadow 0.18s, opacity 0.2s;
+  letter-spacing: 0.01em; user-select: none; white-space: nowrap;
+}
+.btn:active { transform: scale(0.96); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-primary {
+  background: var(--gradient); color: #fff;
+  box-shadow: 0 4px 20px rgba(124,143,255,0.3);
+}
+.btn-primary:hover { box-shadow: 0 6px 28px rgba(124,143,255,0.45); transform: translateY(-1px); }
+
+.btn-ghost {
+  background: var(--surface); border: 1px solid var(--border); color: var(--text-sub);
+}
+.btn-ghost:hover { color: var(--text); background: var(--surface2); }
+
+.btn-danger { background: rgba(255,107,138,0.12); border: 1px solid rgba(255,107,138,0.2); color: var(--error); }
+.btn-danger:hover { background: rgba(255,107,138,0.2); }
+
+.btn-sm { padding: 6px 12px; font-size: 12.5px; border-radius: 8px; }
+
+/* ═════════════════ FORM ════════════════════════ */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+
+.field { display: flex; flex-direction: column; gap: 7px; }
+.field.full { grid-column: 1/-1; }
+label { font-size: 12.5px; font-weight: 500; color: rgba(238,238,245,0.62); letter-spacing: 0.02em; text-transform: uppercase; }
+input[type="text"], input[type="url"], input[type="email"],
+input[type="password"], input[type="number"], select, textarea {
+  width: 100%; padding: 11px 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text); font-family: 'DM Sans', sans-serif;
+  font-size: 14px; outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  -webkit-appearance: none;
+}
+input::placeholder, textarea::placeholder { color: var(--text-muted); }
+input:focus, select:focus, textarea:focus {
+  border-color: rgba(124,143,255,0.5);
+  box-shadow: 0 0 0 3px rgba(124,143,255,0.12);
+}
+select { cursor: pointer; }
+select option { background: #0c0f1a; }
+textarea { resize: vertical; min-height: 80px; }
+
+/* ═════════════════ MESSAGES ════════════════════ */
+.msg {
+  border-radius: var(--radius-sm); font-size: 13.5px; line-height: 1.55;
+  padding: 12px 14px; display: none; align-items: flex-start; gap: 9px;
+}
+.msg.show { display: flex; animation: msgIn 0.3s var(--ez) both; }
+.msg.error   { background: rgba(255,107,138,0.11); border: 1px solid rgba(255,107,138,0.22); color: var(--error); }
+.msg.success { background: rgba(54,217,160,0.11); border: 1px solid rgba(54,217,160,0.22); color: var(--success); }
+@keyframes msgIn { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:none; } }
+
+/* ═════════════════ MODAL ═══════════════════════ */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px; opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+}
+.modal-backdrop.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: rgba(12,15,26,0.96);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 32px;
+  width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+  transform: scale(0.95) translateY(20px);
+  transition: transform 0.25s var(--ez);
+}
+.modal-backdrop.open .modal { transform: none; }
+.modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 24px;
+}
+.modal-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; letter-spacing: -0.03em; }
+.modal-close {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: var(--surface); border: 1px solid var(--border);
+  cursor: pointer; color: var(--text-sub); font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+  transition: color 0.2s, background 0.2s;
+}
+.modal-close:hover { color: var(--text); background: var(--surface2); }
+.modal-actions { display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end; }
+
+/* ═════════════════ SPINNER ════════════════════ */
+.spin {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.25); border-top-color: #fff;
+  animation: spin 0.65s linear infinite; display: none;
+}
+.btn.loading .spin { display: inline-block; }
+.btn.loading .blbl { display: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ═════════════════ CHART CONTAINERS ════════════════ */
+.chart-wrap {
+  position: relative; width: 100%;
+  height: 260px;
+}
+.chart-wrap canvas { width: 100% !important; }
+
+/* ═════════════════ EMPTY STATE ══════════════════ */
+.empty {
+  text-align: center; padding: 56px 20px;
+  color: var(--text-muted);
+}
+.empty-icon { font-size: 48px; margin-bottom: 14px; opacity: 0.5; }
+.empty h3 { font-family: 'Syne', sans-serif; font-size: 18px; color: var(--text-sub); margin-bottom: 8px; }
+.empty p { font-size: 14px; line-height: 1.6; }
+
+/* ═════════════════ LOADING SKELETON ════════════ */
+.skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 8px;
+}
+@keyframes shimmer { to { background-position: -200% 0; } }
+
+/* ═════════════════ TABS ════════════════════════ */
+.tabs {
+  display: flex; gap: 4px; padding: 4px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 12px; width: fit-content;
+  margin-bottom: 24px; flex-wrap: wrap;
+}
+.tab {
+  padding: 8px 16px; border-radius: 9px; cursor: pointer;
+  font-size: 13.5px; font-weight: 500; color: var(--text-sub);
+  transition: color 0.2s, background 0.2s;
+  border: none; background: none; font-family: 'DM Sans', sans-serif;
+  white-space: nowrap;
+}
+.tab:hover { color: var(--text); }
+.tab.active { background: rgba(255,255,255,0.09); color: var(--text); }
+
+/* ═════════════════ ADMIN PANEL ══════════════════ */
+.admin-tabs {
+  display: flex; gap: 4px; padding: 4px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 12px; margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.admin-tab {
+  padding: 8px 16px; border-radius: 9px; cursor: pointer;
+  font-size: 13px; font-weight: 500; color: var(--text-sub);
+  border: none; background: none; font-family: 'DM Sans', sans-serif;
+  transition: color 0.18s, background 0.18s;
+  white-space: nowrap;
+}
+.admin-tab.active { background: rgba(124,143,255,0.15); color: var(--accent); }
+.admin-tab:hover:not(.active) { color: var(--text); background: rgba(255,255,255,0.05); }
+
+.admin-section { display: none; }
+.admin-section.active { display: block; animation: secIn 0.3s var(--ez) both; }
+
+/* Spinner overlay for stats loading */
+.stats-loading {
+  display: flex; align-items: center; justify-content: center;
+  padding: 60px 20px; gap: 12px; color: var(--text-muted); font-size: 14px;
+}
+.stats-loading .big-spin {
+  width: 24px; height: 24px; border-radius: 50%;
+  border: 2px solid rgba(124,143,255,0.3); border-top-color: var(--accent);
+  animation: spin 0.7s linear infinite;
+}
+
+/* ═════════════════ TOP BAR ═════════════════════ */
+.top-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-bottom: 18px; flex-wrap: wrap;
+}
+.search-input {
+  padding: 9px 14px; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px;
+  outline: none; min-width: 0; flex: 1; max-width: 280px;
+  transition: border-color 0.2s;
+}
+.search-input:focus { border-color: rgba(124,143,255,0.5); }
+.search-input::placeholder { color: var(--text-muted); }
 </style>
 </head>
 <body>
-<div class="bg-orbs"></div>
-<div class="grain"></div>
-<div id="toasts"></div>
 
-<!-- MOBILE TOGGLE -->
-<div class="mob-toggle" id="mob-toggle" onclick="toggleSidebar()">☰</div>
-<div class="sidebar-overlay" id="sb-overlay" onclick="toggleSidebar()"></div>
-
-<!-- LOGIN -->
-<div id="login-screen">
-  <div class="login-box">
-    <div class="login-logo">
-      <div class="glow-ring">📡</div>
-      <h1>ARICH IPTV</h1>
-      <p>Panel de gestion — Connexion requise</p>
-    </div>
-    <div class="login-card">
-      <div class="login-tabs">
-        <div class="login-tab active" onclick="switchTab('mac')">🔑 MAC / Clé</div>
-        <div class="login-tab" onclick="switchTab('admin')">🛡️ Admin</div>
-      </div>
-      <div id="tab-mac">
-        <div class="form-group">
-          <label class="form-label">Adresse MAC virtuelle</label>
-          <input type="text" id="login-mac" class="form-input mono" placeholder="AB:CD:EF:12:34:56" maxlength="17" oninput="fmtMac(this)">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Clé d'activation</label>
-          <input type="text" id="login-key" class="form-input mono" placeholder="A1B2C3D4" maxlength="8" oninput="this.value=this.value.toUpperCase()">
-        </div>
-        <button class="login-submit" id="btn-mac" onclick="loginMac()">Accéder à mon panel</button>
-      </div>
-      <div id="tab-admin" style="display:none">
-        <div class="form-group">
-          <label class="form-label">Email administrateur</label>
-          <input type="email" id="login-email" class="form-input" placeholder="admin@arich-iptv.com">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Mot de passe</label>
-          <input type="password" id="login-pass" class="form-input" placeholder="••••••••">
-        </div>
-        <button class="login-submit" id="btn-admin" onclick="loginAdmin()">Connexion Admin</button>
-      </div>
-      <div class="login-divider">Accès sécurisé</div>
-      <p style="text-align:center;font-size:10px;color:var(--t3)">Votre MAC et Clé sont affichées dans l'application ARICH IPTV</p>
-    </div>
-  </div>
+<div class="bg-scene">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
 </div>
+<div class="grain"></div>
 
-<!-- APP -->
-<div id="app" style="display:none">
-  <nav class="sidebar" id="sidebar">
-    <div class="sb-logo">
-      <div class="logo-icon">📡</div>
-      <div class="logo-text">
-        <strong>ARICH IPTV</strong>
-        <span id="sb-role-label">Panel utilisateur</span>
-      </div>
-    </div>
-    <div class="sb-device" id="sb-device">
-      <div class="mac" id="sb-mac">—</div>
-      <div class="key" id="sb-key">——</div>
-      <div style="margin-top:5px" id="sb-status-pill"></div>
-    </div>
-    <nav class="sb-nav">
-      <!-- User nav -->
-      <div id="nav-user">
-        <div class="nav-lbl">Navigation</div>
-        <div class="nav-item active" onclick="go('dashboard')"><div class="nav-icon">📊</div><span>Dashboard</span></div>
-        <div class="nav-item" onclick="go('playlists')"><div class="nav-icon">📋</div><span>Playlists</span><span class="nav-badge" id="pl-badge" style="display:none">0</span></div>
-        <div class="nav-item" onclick="go('device')"><div class="nav-icon">📱</div><span>Mon Appareil</span></div>
-        <div class="nav-item" onclick="go('billing')"><div class="nav-icon">💳</div><span>Abonnement</span></div>
-      </div>
-      <!-- Admin nav -->
-      <div id="nav-admin" style="display:none">
-        <div class="nav-lbl">Admin</div>
-        <div class="nav-item active" onclick="go('adash')"><div class="nav-icon">📊</div><span>Dashboard</span></div>
-        <div class="nav-item" onclick="go('users')"><div class="nav-icon">👥</div><span>Utilisateurs</span></div>
-        <div class="nav-item" onclick="go('alicenses')"><div class="nav-icon">🔑</div><span>Licences</span></div>
-        <div class="nav-item" onclick="go('astats')"><div class="nav-icon">📈</div><span>Statistiques</span></div>
-      </div>
-    </nav>
-    <div class="sb-footer">
-      <button class="logout-btn" onclick="logout()">⬅️ Déconnexion</button>
-    </div>
-  </nav>
+<!-- SIDEBAR OVERLAY -->
+<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
 
+<!-- ═══════════ NAVBAR ═══════════ -->
+<nav class="navbar">
+  <button class="nav-hamburger" onclick="toggleSidebar()" aria-label="Menu">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+
+  <a class="nav-logo" href="#">
+    <div class="nav-gem">A</div>
+    <div class="nav-brand"><em>ARICH</em> IPTV</div>
+  </a>
+
+  <div class="nav-spacer"></div>
+
+  <div class="nav-auth" id="nav-auth-zone" style="position:relative;">
+    <!-- Filled by JS -->
+  </div>
+</nav>
+
+<!-- ═══════════ LAYOUT ═══════════ -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-section">Navigation</div>
+
+    <button class="s-link active" id="sl-playlists" onclick="showSection('playlists')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      Mes playlists
+      <span class="s-badge" id="pl-count-badge">–</span>
+    </button>
+
+    <button class="s-link" id="sl-add" onclick="openAddModal()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      Ajouter une playlist
+    </button>
+
+    <div class="sidebar-section" style="margin-top:12px;">Administration</div>
+
+    <button class="s-link" id="sl-admin" onclick="showSection('admin')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      Panel Admin
+    </button>
+
+    <button class="s-link" id="sl-settings" onclick="showSection('settings')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Paramètres
+    </button>
+  </aside>
+
+  <!-- MAIN CONTENT -->
   <main class="main">
-    <header class="topbar">
-      <div>
-        <div class="topbar-title" id="tb-title">Dashboard</div>
-        <div class="topbar-sub" id="tb-sub">Vue d'ensemble</div>
-      </div>
-      <div class="topbar-actions"><a href="https://devhertox.github.io/arich_iptv/auth.html" style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--s);border:1px solid var(--b);border-radius:9px;color:var(--t2);font-size:11px;font-weight:700;text-decoration:none;transition:var(--tr);white-space:nowrap" onmouseover="this.style.color='var(--t)';this.style.background='var(--s2)'" onmouseout="this.style.color='var(--t2)';this.style.background='var(--s)'">🔐 Espace compte</a>
-        <span class="admin-badge" id="admin-badge" style="display:none">🛡️ ADMIN</span>
-        <div class="topbar-btn" onclick="refresh()" title="Actualiser">🔄</div>
-      </div>
-    </header>
 
-    <div class="content">
-      <!-- ═══ DASHBOARD USER ═══ -->
-      <div class="section active" id="section-dashboard">
-        <div class="stats-grid" id="u-stats-grid">
-          <div class="card stat-card"><div class="glow" style="background:var(--v)"></div><div class="s-icon" style="background:rgba(123,47,255,.12)">📡</div><div class="card-title">Chaînes Live</div><div class="card-val" id="u-live">—</div></div>
-          <div class="card stat-card"><div class="glow" style="background:var(--r)"></div><div class="s-icon" style="background:rgba(255,45,85,.12)">🎬</div><div class="card-title">Films VOD</div><div class="card-val" id="u-movies">—</div></div>
-          <div class="card stat-card"><div class="glow" style="background:#2196f3"></div><div class="s-icon" style="background:rgba(33,150,243,.12)">📺</div><div class="card-title">Séries</div><div class="card-val" id="u-series">—</div></div>
-          <div class="card stat-card"><div class="glow" style="background:var(--gold)"></div><div class="s-icon" style="background:rgba(255,215,64,.12)">📋</div><div class="card-title">Playlists</div><div class="card-val" id="u-pls">—</div></div>
+    <!-- ═══ SECTION: PLAYLISTS ═══ -->
+    <section class="section active" id="sec-playlists">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Mes playlists 📋</div>
+          <div class="page-sub">Gérez vos sources IPTV en un endroit.</div>
         </div>
-        <div class="g2" style="margin-bottom:18px">
-          <div class="card">
-            <div class="sh" style="margin-bottom:12px">
-              <div><div class="card-title" style="margin:0">Licence</div><div style="font-size:12px;color:var(--t2);margin-top:3px" id="u-lic-sub">—</div></div>
-              <span class="badge b-trial" id="u-lic-badge">ESSAI</span>
-            </div>
-            <div class="chart-wrap"><canvas id="ch-license"></canvas></div>
-          </div>
-          <div class="card">
-            <div class="card-title" style="margin-bottom:12px">Répartition contenus</div>
-            <div class="chart-wrap"><canvas id="ch-content"></canvas></div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="sh" style="margin-bottom:14px">
-            <div><div style="font-size:15px;font-weight:800">Votre abonnement</div></div>
-            <button class="btn btn-primary btn-sm" onclick="go('billing')">✨ Upgrader</button>
-          </div>
-          <div class="g3">
-            <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Plan</div><div style="font-weight:800" id="u-plan">—</div></div>
-            <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Expire le</div><div style="font-weight:800" id="u-expires">—</div></div>
-            <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Appareil</div><div style="font-weight:800" id="u-device">—</div></div>
-          </div>
-        </div>
+        <button class="btn btn-primary" onclick="openAddModal()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>Ajouter</span>
+        </button>
       </div>
 
-      <!-- ═══ PLAYLISTS ═══ -->
-      <div class="section" id="section-playlists">
-        <div class="sh">
-          <div><h2>Mes Playlists</h2><p>Gérez vos sources Xtream et M3U</p></div>
-          <button class="btn btn-primary" onclick="openAddPl()">➕ Ajouter</button>
-        </div>
-        <div class="pl-grid" id="pl-grid"><div class="loading-center"><div class="spinner"></div></div></div>
+      <div id="pl-msg" class="msg" style="margin-bottom:16px;"></div>
+
+      <div class="top-bar">
+        <input class="search-input" id="pl-search" type="text" placeholder="🔍 Rechercher une playlist..." oninput="filterPlaylists()">
       </div>
 
-      <!-- ═══ DEVICE ═══ -->
-      <div class="section" id="section-device">
-        <div class="sh"><div><h2>Mon Appareil</h2><p>Identifiant hardware</p></div></div>
-        <div class="device-hero">
-          <div style="font-size:10px;letter-spacing:2px;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Adresse MAC Virtuelle</div>
-          <div class="device-mac" id="d-mac">——:——:——:——:——:——</div>
-          <div style="font-size:10px;letter-spacing:2px;color:var(--t3);text-transform:uppercase;margin:14px 0 6px">Clé d'activation</div>
-          <div class="device-key" id="d-key">————</div>
-          <div style="margin-top:16px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap">
-            <button class="btn btn-ghost btn-sm" onclick="copyEl('d-mac','MAC copiée')">📋 Copier MAC</button>
-            <button class="btn btn-ghost btn-sm" onclick="copyEl('d-key','Clé copiée')">🔑 Copier Clé</button>
+      <div class="card">
+        <div id="pl-loading" class="stats-loading">
+          <div class="big-spin"></div> Chargement des playlists…
+        </div>
+        <div class="table-wrap" id="pl-table-wrap" style="display:none;">
+          <table id="pl-table">
+            <thead>
+              <tr>
+                <th>Nom</th>
+                <th>Type</th>
+                <th>URL / Serveur</th>
+                <th>Statut</th>
+                <th>Ajouté</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="pl-tbody"></tbody>
+          </table>
+          <div class="empty" id="pl-empty" style="display:none;">
+            <div class="empty-icon">📭</div>
+            <h3>Aucune playlist trouvée</h3>
+            <p>Ajoutez votre première playlist IPTV pour commencer.</p>
           </div>
         </div>
-        <div class="card" style="text-align:center;margin-bottom:18px">
-          <div style="font-size:13px;font-weight:700;margin-bottom:14px">QR Code — Accès rapide au panel</div>
-          <div id="qr-box" style="display:flex;justify-content:center;background:#fff;border-radius:14px;padding:14px;width:fit-content;margin:0 auto"></div>
-          <div style="font-size:10px;color:var(--t3);margin-top:10px;word-break:break-all" id="qr-url"></div>
-        </div>
-        <div class="card">
-          <div style="font-size:13px;font-weight:700;margin-bottom:14px">Informations Techniques</div>
-          <div class="table-wrap"><table><tbody id="d-info-tbody"><tr><td colspan="2"><div class="loading-center"><div class="spinner"></div></div></td></tr></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- ═══ SECTION: ADMIN ═══ -->
+    <section class="section" id="sec-admin">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Panel Admin 🛡️</div>
+          <div class="page-sub">Gestion globale et statistiques de l'application.</div>
         </div>
       </div>
 
-      <!-- ═══ BILLING ═══ -->
-      <div class="section" id="section-billing">
-        <div class="sh"><div><h2>Abonnement & Facturation</h2><p>Gérez votre licence ARICH IPTV</p></div></div>
-        <div class="card" style="margin-bottom:18px;background:linear-gradient(135deg,rgba(123,47,255,.08),rgba(255,45,85,.04));border-color:rgba(123,47,255,.2)">
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-            <div>
-              <div style="font-size:10px;letter-spacing:1px;color:var(--t3);text-transform:uppercase">Licence actuelle</div>
-              <div style="font-size:22px;font-weight:800;margin:6px 0" id="b-plan">Essai gratuit</div>
-              <div style="font-size:12px;color:var(--t2)" id="b-expires">Expire : —</div>
-            </div>
-            <span class="badge b-trial" id="b-badge">ESSAI</span>
-          </div>
-        </div>
-        <div class="g3" style="margin-bottom:24px">
-          <div class="plan-card">
-            <div style="font-size:10px;letter-spacing:1px;color:var(--t3);text-transform:uppercase">Mensuel</div>
-            <div class="plan-price"><sup>€</sup>4<span>/mois</span></div>
-            <ul class="feat-list"><li><span class="fi">✓</span>30 jours accès complet</li><li><span class="fi">✓</span>Xtream + M3U</li><li><span class="fi">✓</span>Support prioritaire</li></ul>
-            <button class="btn btn-ghost" style="width:100%;margin-top:16px" onclick="subscribe('monthly')">Choisir</button>
-          </div>
-          <div class="plan-card rec">
-            <div class="rec-badge">⭐ Populaire</div>
-            <div style="font-size:10px;letter-spacing:1px;color:var(--t3);text-transform:uppercase">Annuel</div>
-            <div class="plan-price"><sup>€</sup>35<span>/an</span></div>
-            <div style="font-size:10px;color:var(--g);margin-top:-6px;margin-bottom:3px">Économisez 27%</div>
-            <ul class="feat-list"><li><span class="fi">✓</span>12 mois accès complet</li><li><span class="fi">✓</span>Xtream + M3U</li><li><span class="fi">✓</span>Mises à jour gratuites</li></ul>
-            <button class="btn btn-primary" style="width:100%;margin-top:16px" onclick="subscribe('annual')">Choisir</button>
-          </div>
-          <div class="plan-card">
-            <div style="font-size:10px;letter-spacing:1px;color:var(--t3);text-transform:uppercase">À vie</div>
-            <div class="plan-price"><sup>€</sup>79<span> uniq.</span></div>
-            <ul class="feat-list"><li><span class="fi">✓</span>Accès à vie</li><li><span class="fi">✓</span>Xtream + M3U</li><li><span class="fi">✓</span>Support VIP</li></ul>
-            <button class="btn btn-ghost" style="width:100%;margin-top:16px" onclick="subscribe('lifetime')">Choisir</button>
-          </div>
-        </div>
-        <div class="card">
-          <div style="font-size:14px;font-weight:800;margin-bottom:16px">Historique</div>
-          <div class="timeline" id="b-timeline"><div class="loading-center"><div class="spinner"></div></div></div>
-        </div>
+      <div class="admin-tabs">
+        <button class="admin-tab active" onclick="switchAdminTab('users', this)">👥 Utilisateurs</button>
+        <button class="admin-tab" onclick="switchAdminTab('licenses', this)">🔑 Licences</button>
+        <button class="admin-tab" onclick="switchAdminTab('stats', this)">📊 Statistiques</button>
       </div>
 
-      <!-- ═══ ADMIN DASHBOARD ═══ -->
-      <div class="section" id="section-adash">
-        <div class="stats-grid" id="a-stats-grid">
-          <div class="card stat-card"><div class="glow" style="background:var(--v)"></div><div class="s-icon" style="background:rgba(123,47,255,.12)">📱</div><div class="card-title">Total Devices</div><div class="card-val" id="a-total">—</div><div class="card-sub up" id="a-week">↑ — cette semaine</div></div>
-          <div class="card stat-card"><div class="glow" style="background:var(--g)"></div><div class="s-icon" style="background:rgba(0,230,118,.12)">✅</div><div class="card-title">Actifs</div><div class="card-val" id="a-active">—</div></div>
-          <div class="card stat-card"><div class="glow" style="background:var(--gold)"></div><div class="s-icon" style="background:rgba(255,215,64,.12)">⏳</div><div class="card-title">En essai</div><div class="card-val" id="a-trial">—</div></div>
-          <div class="card stat-card"><div class="glow" style="background:var(--r)"></div><div class="s-icon" style="background:rgba(255,45,85,.12)">🚫</div><div class="card-title">Bannis</div><div class="card-val" id="a-banned">—</div></div>
-          <div class="card stat-card"><div class="glow" style="background:#29b6f6"></div><div class="s-icon" style="background:rgba(41,182,246,.12)">📋</div><div class="card-title">Playlists</div><div class="card-val" id="a-pls">—</div></div>
-          <div class="card stat-card"><div class="glow" style="background:var(--r)"></div><div class="s-icon" style="background:rgba(255,45,85,.12)">🆕</div><div class="card-title">Nouveaux / Jour</div><div class="card-val" id="a-today">—</div></div>
-        </div>
-        <div class="g2">
-          <div class="card">
-            <div class="card-title" style="margin-bottom:12px">Répartition licences</div>
-            <div class="chart-wrap"><canvas id="ch-admin-lic"></canvas></div>
-          </div>
-          <div class="card">
-            <div class="card-title" style="margin-bottom:12px">Inscriptions (7 derniers jours)</div>
-            <div class="chart-wrap"><canvas id="ch-admin-reg"></canvas></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ═══ ADMIN USERS ═══ -->
-      <div class="section" id="section-users">
-        <div class="sh">
-          <div><h2>Utilisateurs</h2><p id="users-count-label">Chargement…</p></div>
-          <div class="search-wrap">
-            <input type="text" id="user-search" class="form-input" placeholder="MAC, nom, clé…" oninput="searchUsers(this.value)">
-          </div>
-        </div>
-        <div class="card" style="padding:0">
+      <!-- ADMIN: Users -->
+      <div class="admin-section active" id="admin-users">
+        <div id="users-loading" class="stats-loading"><div class="big-spin"></div> Chargement…</div>
+        <div class="card" id="users-card" style="display:none;">
           <div class="table-wrap">
             <table>
-              <thead><tr>
-                <th>Appareil</th><th>MAC / Clé</th><th>Licence</th><th>Playlists</th><th>Dernière activité</th><th>Actions</th>
-              </tr></thead>
-              <tbody id="users-tbody"><tr><td colspan="6"><div class="loading-center"><div class="spinner"></div></div></td></tr></tbody>
+              <thead>
+                <tr>
+                  <th>Email</th>
+                  <th>Créé le</th>
+                  <th>Dernière connexion</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="users-tbody"></tbody>
             </table>
+            <div class="empty" id="users-empty" style="display:none;">
+              <div class="empty-icon">👥</div>
+              <h3>Aucun utilisateur</h3>
+            </div>
           </div>
-          <div class="pagination" id="users-pagination"></div>
         </div>
       </div>
 
-      <!-- ═══ ADMIN LICENCES ═══ -->
-      <div class="section" id="section-alicenses">
-        <div class="sh"><div><h2>Gestion Licences</h2><p>Actions rapides sur les licences</p></div></div>
-        <div class="card">
-          <p style="color:var(--t2);font-size:13px;margin-bottom:16px">Sélectionne un utilisateur dans l'onglet <strong>Utilisateurs</strong> pour gérer sa licence.</p>
-          <div id="quick-stats-lic" class="loading-center"><div class="spinner"></div></div>
+      <!-- ADMIN: Licenses -->
+      <div class="admin-section" id="admin-licenses">
+        <div class="page-header" style="margin-bottom:16px;">
+          <div></div>
+          <button class="btn btn-primary btn-sm" onclick="openLicenseModal()">+ Générer une licence</button>
         </div>
-      </div>
-
-      <!-- ═══ ADMIN STATS ═══ -->
-      <div class="section" id="section-astats">
-        <div class="sh">
-          <div><h2>Statistiques App</h2><p>Compteurs globaux de l'application Flutter</p></div>
-          <button class="topbar-btn" onclick="loadAStats()" title="Actualiser" style="cursor:pointer">🔄</button>
-        </div>
-        <div class="stats-grid" style="margin-bottom:20px">
-          <div class="card stat-card">
-            <div class="glow" style="background:#29b6f6"></div>
-            <div class="s-icon" style="background:rgba(41,182,246,.12)">📥</div>
-            <div class="card-title">Installations App</div>
-            <div class="card-val" id="st-installs">—</div>
-            <div class="card-sub up" id="st-installs-sub">Chargement…</div>
-          </div>
-          <div class="card stat-card">
-            <div class="glow" style="background:var(--g)"></div>
-            <div class="s-icon" style="background:rgba(0,230,118,.12)">▶️</div>
-            <div class="card-title">Sessions App</div>
-            <div class="card-val" id="st-sessions">—</div>
-            <div class="card-sub up" id="st-sessions-sub">Chargement…</div>
-          </div>
-          <div class="card stat-card">
-            <div class="glow" style="background:var(--gold)"></div>
-            <div class="s-icon" style="background:rgba(255,215,64,.12)">📊</div>
-            <div class="card-title">Ratio Sessions/Install</div>
-            <div class="card-val" id="st-ratio">—</div>
-            <div class="card-sub" id="st-ratio-sub">Engagements moyens</div>
-          </div>
-        </div>
-        <div class="g2" style="margin-bottom:20px">
-          <div class="card">
-            <div class="card-title" style="margin-bottom:12px;font-size:13px;font-weight:700;color:var(--t)">📊 Installations vs Sessions</div>
-            <div class="chart-wrap"><canvas id="ch-stats-bar"></canvas></div>
-          </div>
-          <div class="card">
-            <div class="card-title" style="margin-bottom:12px;font-size:13px;font-weight:700;color:var(--t)">🍩 Répartition</div>
-            <div class="chart-wrap"><canvas id="ch-stats-donut"></canvas></div>
-          </div>
-        </div>
-        <div class="card">
-          <div style="font-size:13px;font-weight:700;margin-bottom:14px">Détail des compteurs</div>
+        <div id="lic-loading" class="stats-loading"><div class="big-spin"></div> Chargement…</div>
+        <div class="card" id="lic-card" style="display:none;">
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Métrique</th><th>Valeur</th><th>Description</th><th>Table Supabase</th></tr></thead>
-              <tbody id="stats-detail-tbody">
-                <tr><td colspan="4"><div class="loading-center"><div class="spinner"></div></div></td></tr>
-              </tbody>
+              <thead>
+                <tr>
+                  <th>Clé</th>
+                  <th>Utilisateur</th>
+                  <th>Statut</th>
+                  <th>Expire le</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="lic-tbody"></tbody>
             </table>
+            <div class="empty" id="lic-empty" style="display:none;">
+              <div class="empty-icon">🔑</div>
+              <h3>Aucune licence</h3>
+            </div>
           </div>
         </div>
       </div>
 
-    </div>
+      <!-- ADMIN: Stats -->
+      <div class="admin-section" id="admin-stats">
+        <div id="stats-loading" class="stats-loading">
+          <div class="big-spin"></div> Chargement des statistiques…
+        </div>
+
+        <div id="stats-content" style="display:none;">
+          <!-- KPI row -->
+          <div class="grid-3" style="margin-bottom:24px;">
+            <div class="stat-card" style="--card-gradient: linear-gradient(135deg,#7c8fff,#b197fc);">
+              <div class="stat-icon">📥</div>
+              <div class="stat-value" id="kpi-installs">–</div>
+              <div class="stat-label">Installations de l'app</div>
+              <div class="stat-delta up" id="kpi-installs-delta">+0 ce mois</div>
+            </div>
+            <div class="stat-card" style="--card-gradient: linear-gradient(135deg,#38d9f5,#7c8fff);">
+              <div class="stat-icon">🚀</div>
+              <div class="stat-value" id="kpi-sessions">–</div>
+              <div class="stat-label">Sessions app</div>
+              <div class="stat-delta up" id="kpi-sessions-delta">+0 ce mois</div>
+            </div>
+            <div class="stat-card" style="--card-gradient: linear-gradient(135deg,#b197fc,#38d9f5);">
+              <div class="stat-icon">👤</div>
+              <div class="stat-value" id="kpi-users">–</div>
+              <div class="stat-label">Utilisateurs inscrits</div>
+              <div class="stat-delta neutral" id="kpi-users-delta">Total</div>
+            </div>
+          </div>
+
+          <!-- Charts row -->
+          <div class="grid-2">
+            <div class="card">
+              <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:600;margin-bottom:18px;">
+                Installations & Sessions — 30 derniers jours
+              </div>
+              <div class="chart-wrap">
+                <canvas id="chart-installs-sessions"></canvas>
+              </div>
+            </div>
+            <div class="card">
+              <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:600;margin-bottom:18px;">
+                Répartition des événements
+              </div>
+              <div class="chart-wrap" style="height:220px;">
+                <canvas id="chart-donut"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Raw data table -->
+          <div class="card" style="margin-top:20px;">
+            <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:600;margin-bottom:16px;">Derniers événements</div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Événement</th>
+                    <th>Valeur</th>
+                    <th>Date</th>
+                    <th>Appareil</th>
+                  </tr>
+                </thead>
+                <tbody id="stats-events-tbody"></tbody>
+              </table>
+              <div class="empty" id="stats-empty" style="display:none;">
+                <div class="empty-icon">📊</div>
+                <h3>Aucune donnée disponible</h3>
+                <p>Les statistiques apparaîtront dès que l'app sera utilisée.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Error -->
+        <div id="stats-error" style="display:none;" class="msg error show" style="margin-top:16px;"></div>
+      </div>
+    </section>
+
+    <!-- ═══ SECTION: SETTINGS ═══ -->
+    <section class="section" id="sec-settings">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Paramètres ⚙️</div>
+          <div class="page-sub">Gérez votre compte et vos préférences.</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:600;margin-bottom:18px;">Mon compte</div>
+          <div class="field" style="margin-bottom:14px;">
+            <label>Email</label>
+            <input type="email" id="settings-email" readonly style="opacity:0.7;cursor:not-allowed;">
+          </div>
+          <div class="field" style="margin-bottom:14px;">
+            <label>Nouveau mot de passe</label>
+            <input type="password" id="settings-pw" placeholder="Laisser vide pour ne pas changer">
+          </div>
+          <div id="settings-msg" class="msg" style="margin-bottom:14px;"></div>
+          <button class="btn btn-primary" onclick="saveSettings()">
+            <span class="spin"></span>
+            <span class="blbl">Sauvegarder</span>
+          </button>
+        </div>
+        <div class="card">
+          <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:600;margin-bottom:18px;">Danger zone</div>
+          <p style="font-size:14px;color:var(--text-sub);margin-bottom:18px;line-height:1.6;">Ces actions sont irréversibles. Procédez avec précaution.</p>
+          <button class="btn btn-danger" onclick="confirmDeleteAccount()">Supprimer mon compte</button>
+        </div>
+      </div>
+    </section>
+
   </main>
 </div>
 
-<!-- MODAL PLAYLIST -->
-<div class="modal-overlay" id="modal-pl">
+<!-- ═══════════ MODAL: ADD PLAYLIST ═══════════ -->
+<div class="modal-backdrop" id="modal-add">
   <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title" id="modal-pl-title">Ajouter une playlist</div>
-      <div class="modal-close" onclick="closeModal('modal-pl')">✕</div>
+    <div class="modal-head">
+      <div class="modal-title">Ajouter une playlist</div>
+      <button class="modal-close" onclick="closeModal('modal-add')">✕</button>
     </div>
-    <input type="hidden" id="edit-pl-id">
-    <div class="form-group"><label class="form-label">Nom</label><input type="text" id="pl-name" class="form-input" placeholder="Ma playlist principale"></div>
-    <div class="form-group">
-      <label class="form-label">Type</label>
-      <div class="radio-group">
-        <div class="radio-card selected" id="r-xtream" onclick="plType('xtream')">📡 Xtream</div>
-        <div class="radio-card" id="r-m3u" onclick="plType('m3u')">🔗 M3U</div>
+    <div id="add-msg" class="msg" style="margin-bottom:16px;"></div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Nom de la playlist *</label>
+        <input type="text" id="add-name" placeholder="Ma playlist IPTV">
       </div>
-    </div>
-    <div id="xtream-f">
-      <div class="form-group"><label class="form-label">Serveur</label><input type="url" id="pl-host" class="form-input mono" placeholder="http://serveur.com:8080"></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div class="form-group"><label class="form-label">Utilisateur</label><input type="text" id="pl-user" class="form-input mono" placeholder="user123"></div>
-        <div class="form-group"><label class="form-label">Mot de passe</label><input type="text" id="pl-pass" class="form-input mono" placeholder="pass456"></div>
+      <div class="field">
+        <label>Type *</label>
+        <select id="add-type" onchange="toggleAddType()">
+          <option value="m3u">M3U URL</option>
+          <option value="xtream">Xtream Codes</option>
+        </select>
       </div>
-    </div>
-    <div id="m3u-f" style="display:none"><div class="form-group"><label class="form-label">URL M3U</label><input type="url" id="pl-m3u" class="form-input mono" placeholder="http://serveur.com/playlist.m3u"></div></div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-pl')">Annuler</button>
-      <button class="btn btn-primary" id="btn-save-pl" onclick="savePl()">Enregistrer</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL CONFIRM -->
-<div class="modal-overlay" id="modal-confirm">
-  <div class="modal" style="max-width:380px">
-    <div class="modal-header"><div class="modal-title" id="confirm-title">Confirmer</div><div class="modal-close" onclick="closeModal('modal-confirm')">✕</div></div>
-    <p style="color:var(--t2);font-size:13px" id="confirm-msg"></p>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-confirm')">Annuler</button>
-      <button class="btn btn-danger" id="btn-confirm">Confirmer</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL USER DETAIL (admin) -->
-<div class="modal-overlay" id="modal-user">
-  <div class="modal" style="max-width:560px">
-    <div class="modal-header"><div class="modal-title" id="modal-user-title">Détails utilisateur</div><div class="modal-close" onclick="closeModal('modal-user')">✕</div></div>
-    <div id="modal-user-body"></div>
-  </div>
-</div>
-
-<script>
-'use strict';
-// ══════════════════════════════════════════════
-// CONFIG
-// ══════════════════════════════════════════════
-const SB_URL  = 'https://aynucieohuowgkwyftiy.supabase.co';
-const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5bnVjaWVvaHVvd2drd3lmdGl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyOTIxMDMsImV4cCI6MjA4Nzg2ODEwM30.H43CVcyzEuYBQfBIlkn16r5uk768isHr4DeLduo1ETk';
-const sb = supabase.createClient(SB_URL, SB_ANON);
-
-// ══════════════════════════════════════════════
-// STATE
-// ══════════════════════════════════════════════
-let S = {
-  loggedIn: false, isAdmin: false, section: 'dashboard',
-  device: null, license: null, playlists: [], charts: {},
-  plType: 'xtream', editPlId: null,
-  adminData: null,
-  usersPage: 0, usersTotal: 0, usersSearch: '',
-  usersPerPage: 20,
-};
-
-// ══════════════════════════════════════════════
-// INIT
-// ══════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => {
-  checkUrlParams();
-});
-
-function checkUrlParams() {
-  const p = new URLSearchParams(window.location.search);
-  const mac = p.get('mac'), key = p.get('key');
-  if (mac && key) {
-    document.getElementById('login-mac').value = decodeURIComponent(mac);
-    document.getElementById('login-key').value = decodeURIComponent(key).toUpperCase();
-    setTimeout(() => loginMac(), 500);
-  }
-}
-
-// ══════════════════════════════════════════════
-// AUTH
-// ══════════════════════════════════════════════
-async function loginMac() {
-  const mac = document.getElementById('login-mac').value.trim().toUpperCase();
-  const key = document.getElementById('login-key').value.trim().toUpperCase();
-  if (!mac || mac.length < 17) { toast('error','MAC invalide','Format : XX:XX:XX:XX:XX:XX'); return; }
-  if (!key || key.length < 8)  { toast('error','Clé invalide','8 caractères requis'); return; }
-  const btn = document.getElementById('btn-mac');
-  btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:14px;height:14px;margin:0 auto"></div>';
-  try {
-    const { data, error } = await sb.rpc('get_device_by_credentials', { p_mac_address: mac, p_device_key: key });
-    if (error) throw error;
-    if (data?.error) { toast('error','Accès refusé', data.error); return; }
-    if (!data?.device) { toast('error','Device introuvable','Vérifiez votre MAC et clé'); return; }
-    S.device = data.device; S.license = data.license;
-    S.loggedIn = true; S.isAdmin = false;
-    showApp();
-    toast('success','Connexion réussie', S.device.device_name || 'Bienvenue');
-  } catch(e) {
-    toast('error','Erreur', e.message);
-  } finally {
-    btn.disabled = false; btn.textContent = 'Accéder à mon panel';
-  }
-}
-
-async function loginAdmin() {
-  const email = document.getElementById('login-email').value.trim();
-  const pass  = document.getElementById('login-pass').value;
-  if (!email || !pass) { toast('error','Champs manquants',''); return; }
-  const btn = document.getElementById('btn-admin');
-  btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:14px;height:14px;margin:0 auto"></div>';
-  try {
-    const { data, error } = await sb.rpc('admin_login', { p_email: email, p_password: pass });
-    if (error) throw error;
-    if (data?.error) { toast('error','Accès refusé', data.error); return; }
-    S.isAdmin = true; S.loggedIn = true;
-    S.adminUser = data;
-    showApp();
-    toast('success','Connexion Admin', `Bienvenue ${data.username || email}`);
-  } catch(e) {
-    toast('error','Erreur', e.message);
-  } finally {
-    btn.disabled = false; btn.textContent = 'Connexion Admin';
-  }
-}
-
-function switchTab(t) {
-  document.querySelectorAll('.login-tab').forEach((el,i) => el.classList.toggle('active', (t==='mac'&&i===0)||(t==='admin'&&i===1)));
-  document.getElementById('tab-mac').style.display   = t==='mac'   ? 'block':'none';
-  document.getElementById('tab-admin').style.display = t==='admin' ? 'block':'none';
-}
-
-function logout() {
-  Object.values(S.charts).forEach(c => c?.destroy?.());
-  S = { loggedIn:false, isAdmin:false, section:'dashboard', device:null, license:null, playlists:[], charts:{}, plType:'xtream', editPlId:null, adminData:null, usersPage:0, usersTotal:0, usersSearch:'', usersPerPage:20 };
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('login-screen').classList.remove('hidden');
-  history.replaceState({}, '', window.location.pathname);
-  toast('info','Déconnecté','À bientôt');
-}
-
-// ══════════════════════════════════════════════
-// SHOW APP
-// ══════════════════════════════════════════════
-function showApp() {
-  document.getElementById('login-screen').classList.add('hidden');
-  document.getElementById('app').style.display = 'flex';
-  anime({ targets:'#app', opacity:[0,1], duration:350, easing:'easeOutCubic' });
-
-  if (S.isAdmin) {
-    document.getElementById('nav-user').style.display = 'none';
-    document.getElementById('nav-admin').style.display = 'block';
-    document.getElementById('sb-role-label').textContent = 'Panel administrateur';
-    document.getElementById('admin-badge').style.display = 'inline-flex';
-    go('adash');
-  } else {
-    document.getElementById('nav-user').style.display = 'block';
-    document.getElementById('nav-admin').style.display = 'none';
-    if (S.device) {
-      const sc = document.getElementById('sb-device');
-      sc.classList.add('show');
-      document.getElementById('sb-mac').textContent = S.device.mac_address;
-      document.getElementById('sb-key').textContent = S.device.device_key;
-      document.getElementById('sb-status-pill').innerHTML = statusBadge(S.license?.status);
-    }
-    go('dashboard');
-  }
-}
-
-// ══════════════════════════════════════════════
-// NAVIGATION
-// ══════════════════════════════════════════════
-const PAGES = {
-  dashboard: { title:'Dashboard',       sub:'Vue d\'ensemble',           load: loadDashboard },
-  playlists: { title:'Mes Playlists',   sub:'Sources Xtream et M3U',     load: loadPlaylists },
-  device:    { title:'Mon Appareil',    sub:'Identifiant hardware',       load: loadDevice },
-  billing:   { title:'Abonnement',      sub:'Gérez votre licence',        load: loadBilling },
-  adash:     { title:'Dashboard Admin', sub:'Statistiques globales',      load: loadAdminDash },
-  users:     { title:'Utilisateurs',    sub:'Gestion des devices',        load: loadUsers },
-  alicenses: { title:'Licences',        sub:'Gestion des licences',       load: loadAdminLicenses },
-  astats:    { title:'Statistiques',     sub:'Compteurs app_installs et app_sessions', load: loadAStats },
-};
-
-function go(page) {
-  if (!PAGES[page]) return;
-  S.section = page;
-  document.querySelectorAll('.nav-item').forEach(el => {
-    el.classList.toggle('active', el.getAttribute('onclick')?.includes(`'${page}'`));
-  });
-  document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
-  document.getElementById(`section-${page}`)?.classList.add('active');
-  document.getElementById('tb-title').textContent = PAGES[page].title;
-  document.getElementById('tb-sub').textContent   = PAGES[page].sub;
-  PAGES[page].load();
-  if (window.innerWidth < 768) closeSidebar();
-}
-
-function refresh() {
-  const btn = document.querySelector('.topbar-btn');
-  btn.style.transform = 'rotate(360deg)'; btn.style.transition = 'transform .5s ease';
-  setTimeout(() => { btn.style.transform=''; btn.style.transition=''; }, 500);
-  PAGES[S.section]?.load();
-}
-
-// ══════════════════════════════════════════════
-// USER — DASHBOARD
-// ══════════════════════════════════════════════
-async function loadDashboard() {
-  if (!S.device) return;
-  try {
-    const { data: pls } = await sb.from('playlists')
-      .select('total_channels,total_movies,total_series')
-      .eq('device_id', S.device.id);
-    const live   = pls?.reduce((a,p)=>a+(p.total_channels||0),0)||0;
-    const movies = pls?.reduce((a,p)=>a+(p.total_movies||0),0)||0;
-    const series = pls?.reduce((a,p)=>a+(p.total_series||0),0)||0;
-    animNum('u-live', live); animNum('u-movies', movies);
-    animNum('u-series', series); animNum('u-pls', pls?.length||0);
-    renderContentChart(live, movies, series);
-  } catch(e) { console.error(e); }
-  if (S.license) {
-    document.getElementById('u-plan').textContent    = S.license.plan_name || 'Essai';
-    document.getElementById('u-expires').textContent = fmtExpiry(S.license.expires_at);
-    document.getElementById('u-device').textContent  = S.device.device_name || '—';
-    document.getElementById('u-lic-badge').outerHTML = statusBadge(S.license.status, 'u-lic-badge');
-    document.getElementById('u-lic-sub').textContent = `Plan : ${S.license.plan_name||'Essai'}`;
-    renderLicenseChart(S.license);
-  }
-}
-
-// ══════════════════════════════════════════════
-// USER — PLAYLISTS
-// ══════════════════════════════════════════════
-async function loadPlaylists() {
-  if (!S.device) return;
-  const grid = document.getElementById('pl-grid');
-  grid.innerHTML = '<div class="loading-center"><div class="spinner"></div></div>';
-  try {
-    const { data, error } = await sb.from('playlists').select('*').eq('device_id',S.device.id).order('created_at',{ascending:false});
-    if (error) throw error;
-    S.playlists = data || [];
-    const badge = document.getElementById('pl-badge');
-    if (S.playlists.length) { badge.textContent=S.playlists.length; badge.style.display='inline'; }
-    else badge.style.display='none';
-    renderPlaylists();
-  } catch(e) {
-    grid.innerHTML = `<div class="empty"><div class="ei">⚠️</div><h3>Erreur</h3><p>${e.message}</p></div>`;
-  }
-}
-
-function renderPlaylists() {
-  const grid = document.getElementById('pl-grid');
-  if (!S.playlists.length) {
-    grid.innerHTML = `<div class="add-pl" onclick="openAddPl()"><div style="font-size:28px">➕</div><span style="font-size:13px;font-weight:700">Ajouter votre première playlist</span><small style="color:var(--t3);font-size:10px">Xtream ou M3U</small></div>`;
-    return;
-  }
-  grid.innerHTML = S.playlists.map(pl=>`
-    <div class="pl-card" onclick="editPl('${pl.id}')">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">
-        <div style="flex:1;min-width:0">
-          <div class="pl-name">${esc(pl.name)}</div>
-          <div class="pl-host">${esc(pl.xtream_host||pl.m3u_url||'—')}</div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;margin-left:8px">
-          <span class="badge ${pl.type==='xtream'?'b-active':'b-trial'}">${pl.type==='xtream'?'XTREAM':'M3U'}</span>
-          <div style="display:flex;gap:4px" onclick="event.stopPropagation()">
-            <button class="btn btn-ghost btn-icon btn-sm" onclick="editPl('${pl.id}')">✏️</button>
-            <button class="btn btn-danger btn-icon btn-sm" onclick="confirmDelPl('${pl.id}','${esc(pl.name)}')">🗑️</button>
+      <div class="field full" id="add-url-field">
+        <label>URL M3U *</label>
+        <input type="url" id="add-url" placeholder="http://exemple.com/playlist.m3u">
+      </div>
+      <div id="add-xtream-fields" style="display:none;" class="field full">
+        <div class="form-grid">
+          <div class="field">
+            <label>Serveur *</label>
+            <input type="url" id="add-server" placeholder="http://serveur.com">
+          </div>
+          <div class="field">
+            <label>Port</label>
+            <input type="number" id="add-port" placeholder="8080">
+          </div>
+          <div class="field">
+            <label>Nom d'utilisateur *</label>
+            <input type="text" id="add-user" placeholder="username">
+          </div>
+          <div class="field">
+            <label>Mot de passe *</label>
+            <input type="password" id="add-pass" placeholder="password">
           </div>
         </div>
       </div>
-      <div style="height:1px;background:var(--b);margin:8px 0"></div>
-      <div class="pl-stats">
-        <div><div class="pl-stat-val" style="color:var(--v)">${fmt(pl.total_channels)}</div><div class="pl-stat-lbl">Live</div></div>
-        <div><div class="pl-stat-val" style="color:var(--r)">${fmt(pl.total_movies)}</div><div class="pl-stat-lbl">Films</div></div>
-        <div><div class="pl-stat-val" style="color:#2196f3">${fmt(pl.total_series)}</div><div class="pl-stat-lbl">Séries</div></div>
-      </div>
-      ${pl.last_synced_at?`<div style="font-size:9px;color:var(--t3);margin-top:7px">Sync : ${fmtDate(pl.last_synced_at)}</div>`:''}
     </div>
-  `).join('') + `<div class="add-pl" onclick="openAddPl()"><div style="font-size:24px">➕</div><span style="font-size:12px;font-weight:700">Ajouter</span></div>`;
-  anime({ targets:'.pl-card', opacity:[0,1], translateY:[12,0], delay:anime.stagger(50), duration:300, easing:'easeOutCubic' });
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-add')">Annuler</button>
+      <button class="btn btn-primary" id="btn-add-pl" onclick="addPlaylist()">
+        <span class="spin"></span>
+        <span class="blbl">Ajouter</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL: EDIT PLAYLIST ═══════════ -->
+<div class="modal-backdrop" id="modal-edit">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Modifier la playlist</div>
+      <button class="modal-close" onclick="closeModal('modal-edit')">✕</button>
+    </div>
+    <div id="edit-msg" class="msg" style="margin-bottom:16px;"></div>
+    <input type="hidden" id="edit-id">
+    <div class="form-grid">
+      <div class="field full">
+        <label>Nom de la playlist *</label>
+        <input type="text" id="edit-name">
+      </div>
+      <div class="field full" id="edit-url-field">
+        <label>URL M3U</label>
+        <input type="url" id="edit-url">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-edit')">Annuler</button>
+      <button class="btn btn-primary" id="btn-edit-pl" onclick="saveEdit()">
+        <span class="spin"></span>
+        <span class="blbl">Sauvegarder</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- USER MENU PORTAL -->
+<div class="user-menu" id="user-menu">
+  <div style="padding:10px 12px 8px; border-bottom: 1px solid var(--border); margin-bottom:4px;">
+    <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">Connecté en tant que</div>
+    <div style="font-size:13px;color:var(--text);margin-top:3px;word-break:break-all;" id="menu-email"></div>
+  </div>
+  <button class="menu-item" onclick="showSection('settings'); closeUserMenu();">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    Paramètres
+  </button>
+  <div class="menu-divider"></div>
+  <button class="menu-item danger" onclick="doLogout()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    Se déconnecter
+  </button>
+</div>
+
+<script>
+/* ═══════════════════════ SUPABASE ════════════════════════ */
+const SUPABASE_URL  = 'https://aynucieohuowgkwyftiy.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5bnVjaWVvaHVvd2drd3lmdGl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyOTIxMDMsImV4cCI6MjA4Nzg2ODEwM30.H43CVcyzEuYBQfBIlkn16r5uk768isHr4DeLduo1ETk';
+const AUTH_URL      = 'https://devhertox.github.io/arich_iptv/auth.html';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+let currentUser = null;
+let allPlaylists = [];
+let charts = {};
+
+/* ═══════════════════════ INIT ════════════════════════════ */
+async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { window.location.href = AUTH_URL; return; }
+  currentUser = session.user;
+  renderNav();
+  loadPlaylists();
 }
 
-function openAddPl() {
-  S.editPlId = null;
-  document.getElementById('modal-pl-title').textContent = 'Ajouter une playlist';
-  document.getElementById('btn-save-pl').textContent = 'Ajouter';
-  document.getElementById('edit-pl-id').value = '';
-  ['pl-name','pl-host','pl-user','pl-pass','pl-m3u'].forEach(id => document.getElementById(id).value='');
-  plType('xtream'); openModal('modal-pl');
-}
-function editPl(id) {
-  const pl = S.playlists.find(p=>p.id===id); if(!pl) return;
-  S.editPlId = id;
-  document.getElementById('modal-pl-title').textContent = 'Modifier la playlist';
-  document.getElementById('btn-save-pl').textContent = 'Enregistrer';
-  document.getElementById('edit-pl-id').value = id;
-  document.getElementById('pl-name').value = pl.name||'';
-  document.getElementById('pl-host').value = pl.xtream_host||'';
-  document.getElementById('pl-user').value = pl.xtream_username||'';
-  document.getElementById('pl-pass').value = pl.xtream_password||'';
-  document.getElementById('pl-m3u').value  = pl.m3u_url||'';
-  plType(pl.type); openModal('modal-pl');
-}
-async function savePl() {
-  const name = document.getElementById('pl-name').value.trim();
-  if (!name) { toast('warning','Nom requis',''); return; }
-  const isX = S.plType==='xtream';
-  const btn = document.getElementById('btn-save-pl');
-  const payload = {
-    device_id: S.device.id, name, type: S.plType, is_active: true,
-    xtream_host:     isX ? document.getElementById('pl-host').value.trim() : null,
-    xtream_username: isX ? document.getElementById('pl-user').value.trim() : null,
-    xtream_password: isX ? document.getElementById('pl-pass').value.trim() : null,
-    m3u_url:         !isX ? document.getElementById('pl-m3u').value.trim() : null,
-  };
-  if (isX && !payload.xtream_host) { toast('warning','Serveur requis',''); return; }
-  if (!isX && !payload.m3u_url)    { toast('warning','URL requise',''); return; }
-  btn.disabled=true; btn.innerHTML='<div class="spinner" style="width:12px;height:12px;margin:0 4px"></div>';
-  try {
-    const editId = document.getElementById('edit-pl-id').value;
-    let error;
-    if (editId) ({ error } = await sb.from('playlists').update(payload).eq('id',editId).eq('device_id',S.device.id));
-    else        ({ error } = await sb.from('playlists').insert(payload));
-    if (error) throw error;
-    toast('success', editId?'Playlist modifiée':'Playlist ajoutée', name);
-    closeModal('modal-pl'); await loadPlaylists();
-  } catch(e) { toast('error','Erreur',e.message); }
-  finally { btn.disabled=false; btn.textContent=S.editPlId?'Enregistrer':'Ajouter'; }
-}
-function confirmDelPl(id, name) {
-  document.getElementById('confirm-title').textContent = 'Supprimer la playlist';
-  document.getElementById('confirm-msg').textContent   = `Supprimer "${name}" ? Action irréversible.`;
-  document.getElementById('btn-confirm').onclick = async () => {
-    try {
-      const {error} = await sb.from('playlists').delete().eq('id',id).eq('device_id',S.device.id);
-      if(error) throw error;
-      closeModal('modal-confirm'); toast('success','Supprimée',name); await loadPlaylists();
-    } catch(e) { toast('error','Erreur',e.message); }
-  };
-  openModal('modal-confirm');
-}
-function plType(t) {
-  S.plType = t;
-  document.getElementById('r-xtream').classList.toggle('selected', t==='xtream');
-  document.getElementById('r-m3u').classList.toggle('selected', t==='m3u');
-  document.getElementById('xtream-f').style.display = t==='xtream'?'block':'none';
-  document.getElementById('m3u-f').style.display    = t==='m3u'?'block':'none';
-}
-
-// ══════════════════════════════════════════════
-// USER — DEVICE
-// ══════════════════════════════════════════════
-function loadDevice() {
-  if (!S.device) return;
-  const d = S.device;
-  document.getElementById('d-mac').textContent = d.mac_address||'—';
-  document.getElementById('d-key').textContent = d.device_key||'—';
-  const qrUrl = `${window.location.origin}${window.location.pathname}?mac=${encodeURIComponent(d.mac_address)}&key=${encodeURIComponent(d.device_key)}`;
-  document.getElementById('qr-url').textContent = qrUrl;
-  const qrBox = document.getElementById('qr-box'); qrBox.innerHTML='';
-  new QRCode(qrBox,{text:qrUrl,width:160,height:160,colorDark:'#0D0D1A',colorLight:'#FFFFFF',correctLevel:QRCode.CorrectLevel.M});
-  const rows=[
-    ['Adresse MAC',`<span class="mono" style="color:var(--v)">${d.mac_address}</span>`],
-    ['Clé d\'activation',`<span class="mono" style="font-size:16px;font-weight:700">${d.device_key}</span>`],
-    ['Appareil', d.device_name||'—'],['Modèle',d.device_model||'—'],
-    ['Marque',d.device_brand||'—'],['Android',d.android_version||'—'],
-    ['Version app',d.app_version||'—'],
-    ['Premier accès',d.created_at?fmtDate(d.created_at):'—'],
-    ['Dernier accès',d.last_seen_at?fmtDate(d.last_seen_at):'—'],
-    ['Statut',d.is_banned?'<span class="badge b-banned">BANNI</span>':'<span class="badge b-active">ACTIF</span>'],
-  ];
-  document.getElementById('d-info-tbody').innerHTML = rows.map(([l,v])=>`<tr><td style="color:var(--t3);font-size:11px;font-weight:600;width:40%">${l}</td><td>${v}</td></tr>`).join('');
-}
-
-// ══════════════════════════════════════════════
-// USER — BILLING
-// ══════════════════════════════════════════════
-function loadBilling() {
-  if (!S.license) return;
-  const l = S.license;
-  document.getElementById('b-plan').textContent    = l.plan_name||'Essai';
-  document.getElementById('b-expires').textContent = `Expire : ${fmtExpiry(l.expires_at)}`;
-  document.getElementById('b-badge').outerHTML = statusBadge(l.status, 'b-badge');
-  document.getElementById('b-timeline').innerHTML = `
-    <div class="tl-item"><div class="tl-dot">🎯</div><div><div style="font-size:12px;font-weight:700">Licence "${l.plan_name||'Essai'}" activée</div><div class="tl-date">${l.starts_at?fmtDate(l.starts_at):'—'}</div></div></div>
-    ${l.expires_at?`<div class="tl-item"><div class="tl-dot">⏱️</div><div><div style="font-size:12px;font-weight:700">Expiration prévue</div><div class="tl-date">${fmtDate(l.expires_at)}</div></div></div>`:''}
+function renderNav() {
+  const zone = document.getElementById('nav-auth-zone');
+  const initial = (currentUser.email || 'U')[0].toUpperCase();
+  const shortEmail = currentUser.email || '';
+  zone.innerHTML = `
+    <div class="user-badge" onclick="toggleUserMenu(event)">
+      <div class="user-avatar">${initial}</div>
+      <div class="user-email">${shortEmail}</div>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
   `;
+  document.getElementById('menu-email').textContent = shortEmail;
+  if (document.getElementById('settings-email'))
+    document.getElementById('settings-email').value = shortEmail;
 }
-function subscribe(plan) { toast('info','Bientôt disponible',`Paiement Stripe — intégration en cours`); }
 
-// ══════════════════════════════════════════════
-// ADMIN — DASHBOARD
-// ══════════════════════════════════════════════
-async function loadAdminDash() {
+/* ═══════════════════════ USER MENU ═══════════════════════ */
+function toggleUserMenu(e) {
+  e.stopPropagation();
+  document.getElementById('user-menu').classList.toggle('open');
+}
+function closeUserMenu() { document.getElementById('user-menu').classList.remove('open'); }
+document.addEventListener('click', () => closeUserMenu());
+
+async function doLogout() {
+  await sb.auth.signOut();
+  window.location.href = AUTH_URL;
+}
+
+/* ═══════════════════════ SIDEBAR ═════════════════════════ */
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('show');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+}
+
+/* ═══════════════════════ SECTIONS ════════════════════════ */
+const sectionMap = {
+  playlists: 'sec-playlists',
+  admin: 'sec-admin',
+  settings: 'sec-settings',
+};
+const slinkMap = {
+  playlists: 'sl-playlists',
+  admin: 'sl-admin',
+  settings: 'sl-settings',
+};
+function showSection(name) {
+  Object.keys(sectionMap).forEach(k => {
+    document.getElementById(sectionMap[k]).classList.remove('active');
+    document.getElementById(slinkMap[k])?.classList.remove('active');
+  });
+  document.getElementById(sectionMap[name]).classList.add('active');
+  document.getElementById(slinkMap[name])?.classList.add('active');
+  closeSidebar();
+  if (name === 'admin') loadAdminUsers();
+  if (name === 'settings' && currentUser) {
+    document.getElementById('settings-email').value = currentUser.email;
+  }
+}
+
+/* ═══════════════════════ ADMIN TABS ══════════════════════ */
+let activeAdminTab = 'users';
+function switchAdminTab(tab, el) {
+  document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+  document.getElementById('admin-' + tab).classList.add('active');
+  activeAdminTab = tab;
+  if (tab === 'users') loadAdminUsers();
+  if (tab === 'licenses') loadLicenses();
+  if (tab === 'stats') loadStats();
+}
+
+/* ═══════════════════════ PLAYLISTS ═══════════════════════ */
+async function loadPlaylists() {
+  document.getElementById('pl-loading').style.display = 'flex';
+  document.getElementById('pl-table-wrap').style.display = 'none';
+
+  const { data, error } = await sb.from('playlists')
+    .select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+
+  document.getElementById('pl-loading').style.display = 'none';
+  document.getElementById('pl-table-wrap').style.display = 'block';
+
+  if (error) { showMsg('pl-msg', 'Erreur lors du chargement : ' + error.message); return; }
+  allPlaylists = data || [];
+  document.getElementById('pl-count-badge').textContent = allPlaylists.length;
+  renderPlaylists(allPlaylists);
+}
+
+function renderPlaylists(rows) {
+  const tbody = document.getElementById('pl-tbody');
+  const empty = document.getElementById('pl-empty');
+  tbody.innerHTML = '';
+
+  if (!rows.length) {
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  rows.forEach(pl => {
+    const date = pl.created_at ? new Date(pl.created_at).toLocaleDateString('fr-FR') : '—';
+    const url  = pl.url || pl.server_url || '';
+    const type = pl.type === 'xtream' ? 'Xtream' : 'M3U';
+    const statusVal = pl.status || 'active';
+    const statusLabel = { active:'Actif', expired:'Expiré', pending:'En attente' }[statusVal] || statusVal;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="td-name">${esc(pl.name || '—')}</td>
+      <td><span class="badge ${statusVal === 'active' ? 'active' : 'pending'}" style="background:rgba(124,143,255,0.1);color:var(--accent);">${type}</span></td>
+      <td class="td-url" title="${esc(url)}">${esc(url) || '—'}</td>
+      <td><span class="badge ${statusVal}">${statusLabel}</span></td>
+      <td>${date}</td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="btn btn-ghost btn-sm" onclick='openEditModal(${JSON.stringify(pl)})'>✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deletePl('${pl.id}')">🗑️</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function filterPlaylists() {
+  const q = document.getElementById('pl-search').value.toLowerCase();
+  const filtered = q ? allPlaylists.filter(p => (p.name||'').toLowerCase().includes(q) || (p.url||'').toLowerCase().includes(q)) : allPlaylists;
+  renderPlaylists(filtered);
+}
+
+/* ADD */
+function toggleAddType() {
+  const type = document.getElementById('add-type').value;
+  document.getElementById('add-url-field').style.display     = type === 'm3u' ? 'flex' : 'none';
+  document.getElementById('add-xtream-fields').style.display = type === 'xtream' ? 'block' : 'none';
+}
+
+async function addPlaylist() {
+  clearMsg('add-msg');
+  const name = document.getElementById('add-name').value.trim();
+  const type = document.getElementById('add-type').value;
+  if (!name) { showMsg('add-msg', 'Le nom est obligatoire.'); return; }
+
+  let row = { user_id: currentUser.id, name, type };
+  if (type === 'm3u') {
+    const url = document.getElementById('add-url').value.trim();
+    if (!url) { showMsg('add-msg', 'L\'URL M3U est obligatoire.'); return; }
+    row.url = url;
+  } else {
+    const server = document.getElementById('add-server').value.trim();
+    const user   = document.getElementById('add-user').value.trim();
+    const pass   = document.getElementById('add-pass').value.trim();
+    if (!server || !user || !pass) { showMsg('add-msg', 'Serveur, utilisateur et mot de passe sont requis.'); return; }
+    row.server_url = server;
+    row.username   = user;
+    row.password   = pass;
+  }
+
+  setLoading('btn-add-pl', true);
+  const { error } = await sb.from('playlists').insert([row]);
+  setLoading('btn-add-pl', false);
+
+  if (error) { showMsg('add-msg', 'Erreur : ' + error.message); return; }
+  closeModal('modal-add');
+  loadPlaylists();
+}
+
+/* EDIT */
+function openEditModal(pl) {
+  document.getElementById('edit-id').value  = pl.id;
+  document.getElementById('edit-name').value = pl.name || '';
+  document.getElementById('edit-url').value  = pl.url || pl.server_url || '';
+  clearMsg('edit-msg');
+  openModal('modal-edit');
+}
+
+async function saveEdit() {
+  clearMsg('edit-msg');
+  const id   = document.getElementById('edit-id').value;
+  const name = document.getElementById('edit-name').value.trim();
+  const url  = document.getElementById('edit-url').value.trim();
+  if (!name) { showMsg('edit-msg', 'Le nom est obligatoire.'); return; }
+
+  setLoading('btn-edit-pl', true);
+  const updates = { name };
+  if (url) updates.url = url;
+  const { error } = await sb.from('playlists').update(updates).eq('id', id).eq('user_id', currentUser.id);
+  setLoading('btn-edit-pl', false);
+
+  if (error) { showMsg('edit-msg', 'Erreur : ' + error.message); return; }
+  closeModal('modal-edit');
+  loadPlaylists();
+}
+
+/* DELETE */
+async function deletePl(id) {
+  if (!confirm('Supprimer cette playlist ?')) return;
+  const { error } = await sb.from('playlists').delete().eq('id', id).eq('user_id', currentUser.id);
+  if (error) { showMsg('pl-msg', 'Erreur : ' + error.message, 'error'); return; }
+  showMsg('pl-msg', '✅ Playlist supprimée.', 'success');
+  loadPlaylists();
+}
+
+/* ═══════════════════════ ADMIN: USERS ═══════════════════ */
+let usersLoaded = false;
+async function loadAdminUsers() {
+  if (usersLoaded) return;
+  usersLoaded = true;
+
+  // Try admin list (needs service role — gracefully fallback to profiles table)
+  const { data, error } = await sb.from('profiles')
+    .select('*').order('created_at', { ascending: false }).limit(100);
+
+  document.getElementById('users-loading').style.display = 'none';
+  document.getElementById('users-card').style.display = 'block';
+
+  const tbody = document.getElementById('users-tbody');
+  const empty = document.getElementById('users-empty');
+
+  if (error || !data || !data.length) {
+    empty.style.display = 'block'; return;
+  }
+  empty.style.display = 'none';
+  tbody.innerHTML = '';
+  data.forEach(u => {
+    const created = u.created_at ? new Date(u.created_at).toLocaleDateString('fr-FR') : '—';
+    const last    = u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleDateString('fr-FR') : '—';
+    const email   = u.email || u.id || '—';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${esc(email)}</td>
+      <td>${created}</td>
+      <td>${last}</td>
+      <td><button class="btn btn-ghost btn-sm">Détails</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+/* ═══════════════════════ ADMIN: LICENSES ════════════════ */
+let licsLoaded = false;
+async function loadLicenses() {
+  if (licsLoaded) return;
+  licsLoaded = true;
+  const { data, error } = await sb.from('licenses').select('*').order('created_at', { ascending: false }).limit(100);
+  document.getElementById('lic-loading').style.display = 'none';
+  document.getElementById('lic-card').style.display = 'block';
+
+  const tbody = document.getElementById('lic-tbody');
+  const empty = document.getElementById('lic-empty');
+
+  if (error || !data || !data.length) { empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = '';
+  data.forEach(l => {
+    const exp = l.expires_at ? new Date(l.expires_at).toLocaleDateString('fr-FR') : 'Illimitée';
+    const status = l.status || 'active';
+    tbody.innerHTML += `
+      <tr>
+        <td style="font-family:monospace;font-size:12px;">${esc(l.key || l.id || '—')}</td>
+        <td>${esc(l.user_email || l.user_id || '—')}</td>
+        <td><span class="badge ${status}">${status}</span></td>
+        <td>${exp}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="revokeLicense('${l.id}')">Révoquer</button></td>
+      </tr>`;
+  });
+}
+
+async function revokeLicense(id) {
+  if (!confirm('Révoquer cette licence ?')) return;
+  await sb.from('licenses').update({ status: 'expired' }).eq('id', id);
+  licsLoaded = false;
+  loadLicenses();
+}
+
+function openLicenseModal() { alert('Fonctionnalité de génération de licence à implémenter.'); }
+
+/* ═══════════════════════ ADMIN: STATS ═══════════════════ */
+let statsLoaded = false;
+async function loadStats() {
+  if (statsLoaded) return;
+
+  document.getElementById('stats-loading').style.display = 'flex';
+  document.getElementById('stats-content').style.display = 'none';
+  document.getElementById('stats-error').style.display = 'none';
+
   try {
-    const { data, error } = await sb.rpc('admin_get_stats');
-    if (error) throw error;
-    S.adminData = data;
-    animNum('a-total',  data.total_devices||0);
-    animNum('a-active', data.active_devices||0);
-    animNum('a-trial',  data.trial_devices||0);
-    animNum('a-banned', data.banned_devices||0);
-    animNum('a-pls',    data.total_playlists||0);
-    animNum('a-today',  data.new_today||0);
-    document.getElementById('a-week').textContent = `↑ ${data.new_week||0} cette semaine`;
-    renderAdminCharts(data);
-  } catch(e) { toast('error','Erreur stats',e.message); }
+    // Fetch from app_stats table (app_installs, app_sessions counters)
+    const { data: statsRows, error: statsErr } = await sb
+      .from('app_stats')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(200);
+
+    // Fetch user count from profiles
+    const { count: userCount } = await sb.from('profiles').select('*', { count: 'exact', head: true });
+
+    document.getElementById('stats-loading').style.display = 'none';
+
+    if (statsErr) {
+      // Fallback: try app_events table
+      await loadStatsFallback(userCount);
+      return;
+    }
+
+    statsLoaded = true;
+    processStatsData(statsRows || [], userCount || 0);
+
+  } catch (e) {
+    document.getElementById('stats-loading').style.display = 'none';
+    document.getElementById('stats-error').style.display = 'flex';
+    document.getElementById('stats-error').textContent = 'Impossible de charger les statistiques : ' + e.message;
+  }
 }
 
-function renderAdminCharts(d) {
-  // Licences doughnut
-  const ctx1 = document.getElementById('ch-admin-lic').getContext('2d');
-  if (S.charts.adminLic) S.charts.adminLic.destroy();
-  S.charts.adminLic = new Chart(ctx1, {
-    type: 'doughnut',
-    data: {
-      labels: ['Actifs','Essai','Bannis'],
-      datasets:[{
-        data: [d.active_devices||0, d.trial_devices||0, d.banned_devices||0],
-        backgroundColor: ['rgba(0,230,118,.7)','rgba(255,215,64,.7)','rgba(255,45,85,.7)'],
-        borderColor: ['transparent','transparent','transparent'],
-        borderRadius: 4,
-      }]
-    },
-    options: { responsive:true, maintainAspectRatio:false, cutout:'70%',
-      plugins:{ legend:{ position:'bottom', labels:{ color:'rgba(255,255,255,.5)', font:{size:11}, padding:12 } } }
+async function loadStatsFallback(userCount) {
+  // Try alternate table names
+  const tables = ['app_events', 'analytics', 'events', 'metrics'];
+  for (const tbl of tables) {
+    const { data, error } = await sb.from(tbl).select('*').order('created_at', { ascending: false }).limit(200);
+    if (!error && data) {
+      statsLoaded = true;
+      processStatsData(data, userCount || 0);
+      return;
+    }
+  }
+  // Show empty state
+  processStatsData([], userCount || 0);
+}
+
+function processStatsData(rows, userCount) {
+  document.getElementById('stats-content').style.display = 'block';
+
+  // Count installs & sessions
+  let installs = 0, sessions = 0;
+  let installsThisMonth = 0, sessionsThisMonth = 0;
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  // daily buckets for chart
+  const days = {};
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0,10);
+    days[key] = { installs: 0, sessions: 0 };
+  }
+
+  rows.forEach(r => {
+    const evt  = (r.event_type || r.event || r.type || '').toLowerCase();
+    const val  = Number(r.value || r.count || 1);
+    const date = r.created_at ? new Date(r.created_at) : null;
+    const dKey = date ? date.toISOString().slice(0,10) : null;
+    const isThisMonth = date && date >= monthStart;
+
+    // Try to detect installs / sessions from various field names
+    const isInstall = evt.includes('install') || r.app_installs != null;
+    const isSession = evt.includes('session') || r.app_sessions != null;
+
+    // Direct column names (app_stats table with counters)
+    if (r.app_installs != null) { installs = Number(r.app_installs); }
+    if (r.app_sessions != null) { sessions = Number(r.app_sessions); }
+
+    if (isInstall && r.app_installs == null) {
+      installs += val;
+      if (isThisMonth) installsThisMonth += val;
+      if (dKey && days[dKey]) days[dKey].installs += val;
+    }
+    if (isSession && r.app_sessions == null) {
+      sessions += val;
+      if (isThisMonth) sessionsThisMonth += val;
+      if (dKey && days[dKey]) days[dKey].sessions += val;
     }
   });
 
-  // Registrations bar (mock 7 jours — à remplacer par vraie query si besoin)
-  const ctx2 = document.getElementById('ch-admin-reg').getContext('2d');
-  if (S.charts.adminReg) S.charts.adminReg.destroy();
-  const days = Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return d.toLocaleDateString('fr-FR',{weekday:'short'});});
-  S.charts.adminReg = new Chart(ctx2, {
+  // If app_stats is a single-row counter table
+  if (rows.length === 1 && rows[0].app_installs != null) {
+    installs = Number(rows[0].app_installs) || 0;
+    sessions = Number(rows[0].app_sessions) || 0;
+  }
+
+  // KPI
+  document.getElementById('kpi-installs').textContent  = fmtNum(installs);
+  document.getElementById('kpi-sessions').textContent  = fmtNum(sessions);
+  document.getElementById('kpi-users').textContent     = fmtNum(userCount);
+  document.getElementById('kpi-installs-delta').textContent = `+${installsThisMonth} ce mois`;
+  document.getElementById('kpi-sessions-delta').textContent = `+${sessionsThisMonth} ce mois`;
+
+  // Charts
+  renderCharts(days, installs, sessions);
+
+  // Events table
+  const tbody = document.getElementById('stats-events-tbody');
+  const empty = document.getElementById('stats-empty');
+  if (!rows.length) { empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = '';
+  rows.slice(0,30).forEach(r => {
+    const date = r.created_at ? new Date(r.created_at).toLocaleString('fr-FR') : '—';
+    const evt  = r.event_type || r.event || r.type || '—';
+    const val  = r.value || r.count || r.app_installs || '—';
+    const dev  = r.device || r.platform || r.user_agent || '—';
+    tbody.innerHTML += `
+      <tr>
+        <td><span class="badge" style="background:rgba(124,143,255,0.1);color:var(--accent);">${esc(evt)}</span></td>
+        <td>${esc(String(val))}</td>
+        <td>${date}</td>
+        <td style="font-size:12px;">${esc(String(dev).slice(0,40))}</td>
+      </tr>`;
+  });
+}
+
+function renderCharts(days, installs, sessions) {
+  const labels = Object.keys(days);
+  const installsData = labels.map(d => days[d].installs);
+  const sessionsData = labels.map(d => days[d].sessions);
+
+  // Destroy existing
+  Object.values(charts).forEach(c => c.destroy());
+  charts = {};
+
+  const chartDefaults = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { labels: { color: 'rgba(238,238,245,0.6)', font: { family: 'DM Sans', size: 12 } } } },
+    scales: {
+      x: { ticks: { color: 'rgba(238,238,245,0.35)', font: { size: 10 }, maxTicksLimit: 8 }, grid: { color: 'rgba(255,255,255,0.04)' } },
+      y: { ticks: { color: 'rgba(238,238,245,0.35)', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true }
+    }
+  };
+
+  charts.line = new Chart(document.getElementById('chart-installs-sessions'), {
     type: 'bar',
     data: {
-      labels: days,
-      datasets:[{
-        label: 'Inscriptions',
-        data: Array.from({length:6},()=>0).concat([d.new_today||0]),
-        backgroundColor: 'rgba(123,47,255,.6)',
-        borderRadius: 6, borderSkipped: false,
+      labels: labels.map(d => d.slice(5)), // MM-DD
+      datasets: [
+        {
+          label: 'Installations',
+          data: installsData,
+          backgroundColor: 'rgba(124,143,255,0.5)',
+          borderColor: '#7c8fff', borderWidth: 2, borderRadius: 4,
+        },
+        {
+          label: 'Sessions',
+          data: sessionsData,
+          backgroundColor: 'rgba(177,151,252,0.4)',
+          borderColor: '#b197fc', borderWidth: 2, borderRadius: 4,
+        }
+      ]
+    },
+    options: { ...chartDefaults }
+  });
+
+  charts.donut = new Chart(document.getElementById('chart-donut'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Installations', 'Sessions'],
+      datasets: [{
+        data: [installs || 1, sessions || 1],
+        backgroundColor: ['rgba(124,143,255,0.75)', 'rgba(56,217,245,0.65)'],
+        borderColor: ['#7c8fff', '#38d9f5'],
+        borderWidth: 2,
+        hoverOffset: 8,
       }]
     },
     options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ display:false } },
-      scales:{ x:{ grid:{color:'rgba(255,255,255,.04)'}, ticks:{color:'rgba(255,255,255,.35)',font:{size:10}} }, y:{ grid:{color:'rgba(255,255,255,.04)'}, ticks:{color:'rgba(255,255,255,.35)',font:{size:10}}, beginAtZero:true } }
+      responsive: true, maintainAspectRatio: false, cutout: '68%',
+      plugins: {
+        legend: { position: 'bottom', labels: { color: 'rgba(238,238,245,0.6)', font: { family: 'DM Sans', size: 12 }, padding: 16 } }
+      }
     }
   });
 }
 
-// ══════════════════════════════════════════════
-// ADMIN — USERS
-// ══════════════════════════════════════════════
-let searchTimer;
-function searchUsers(val) {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => { S.usersSearch=val; S.usersPage=0; loadUsers(); }, 350);
+/* ═══════════════════════ SETTINGS ═══════════════════════ */
+async function saveSettings() {
+  clearMsg('settings-msg');
+  const pw = document.getElementById('settings-pw').value;
+  if (!pw) { showMsg('settings-msg', 'Entrez un nouveau mot de passe.'); return; }
+  if (pw.length < 8) { showMsg('settings-msg', 'Minimum 8 caractères.'); return; }
+  const { error } = await sb.auth.updateUser({ password: pw });
+  if (error) { showMsg('settings-msg', error.message); return; }
+  showMsg('settings-msg', '✅ Mot de passe mis à jour !', 'success');
+  document.getElementById('settings-pw').value = '';
 }
 
-async function loadUsers() {
-  const tbody = document.getElementById('users-tbody');
-  tbody.innerHTML = '<tr><td colspan="6"><div class="loading-center"><div class="spinner"></div></div></td></tr>';
-  try {
-    const { data, error } = await sb.rpc('admin_get_users', {
-      p_limit: S.usersPerPage, p_offset: S.usersPage * S.usersPerPage, p_search: S.usersSearch
-    });
-    if (error) throw error;
-    S.usersTotal = data.total || 0;
-    const users = data.users || [];
-    document.getElementById('users-count-label').textContent = `${S.usersTotal} appareil${S.usersTotal>1?'s':''} enregistré${S.usersTotal>1?'s':''}`;
-    if (!users.length) {
-      tbody.innerHTML = '<tr><td colspan="6"><div class="empty"><div class="ei">👥</div><h3>Aucun utilisateur</h3><p>Aucun device ne correspond à la recherche</p></div></td></tr>';
-    } else {
-      tbody.innerHTML = users.map(u=>`
-        <tr class="user-row" onclick="openUserDetail('${u.id}')">
-          <td>
-            <div style="font-size:13px;font-weight:700">${esc(u.device_name||'—')}</div>
-            <div style="font-size:10px;color:var(--t3)">${esc(u.device_brand||'')} ${esc(u.device_model||'')} · Android ${u.android_version||'—'}</div>
-          </td>
-          <td>
-            <div class="mono" style="font-size:11px;color:var(--v)">${esc(u.mac_address)}</div>
-            <div class="mono" style="font-size:12px;font-weight:700;letter-spacing:2px">${esc(u.device_key)}</div>
-          </td>
-          <td>${statusBadge(u.license_status)}</td>
-          <td><span style="font-weight:700;font-size:14px">${u.playlist_count||0}</span></td>
-          <td style="font-size:11px;color:var(--t3)">${u.last_seen_at?fmtDate(u.last_seen_at):'Jamais'}</td>
-          <td onclick="event.stopPropagation()">
-            <div class="action-cell">
-              ${u.is_banned
-                ? `<button class="btn btn-success btn-sm" onclick="deviceAction('${u.id}','unban')">✅ Débannir</button>`
-                : `<button class="btn btn-danger btn-sm" onclick="deviceAction('${u.id}','ban')">🚫 Bannir</button>`}
-              <button class="btn btn-ghost btn-sm" onclick="deviceAction('${u.id}','extend_trial')">+7j</button>
-            </div>
-          </td>
-        </tr>
-      `).join('');
-    }
-    renderUsersPagination();
-  } catch(e) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="ei">⚠️</div><h3>Erreur</h3><p>${e.message}</p></div></td></tr>`;
-    toast('error','Erreur chargement',e.message);
-  }
+async function confirmDeleteAccount() {
+  if (!confirm('Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.')) return;
+  alert('Pour supprimer votre compte, contactez le support.');
 }
 
-function renderUsersPagination() {
-  const total = Math.ceil(S.usersTotal / S.usersPerPage);
-  const pg = document.getElementById('users-pagination');
-  if (total <= 1) { pg.innerHTML=''; return; }
-  let html = `<button class="page-btn" onclick="usersPage(${S.usersPage-1})" ${S.usersPage===0?'disabled':''}>‹</button>`;
-  for (let i=0; i<total; i++) {
-    if (i===0||i===total-1||Math.abs(i-S.usersPage)<=1)
-      html += `<button class="page-btn ${i===S.usersPage?'active':''}" onclick="usersPage(${i})">${i+1}</button>`;
-    else if (Math.abs(i-S.usersPage)===2)
-      html += `<span class="page-info">…</span>`;
-  }
-  html += `<button class="page-btn" onclick="usersPage(${S.usersPage+1})" ${S.usersPage>=total-1?'disabled':''}>›</button>`;
-  html += `<span class="page-info">${S.usersTotal} total</span>`;
-  pg.innerHTML = html;
-}
-function usersPage(p) { S.usersPage=p; loadUsers(); }
-
-async function deviceAction(deviceId, action, value='') {
-  try {
-    const { data, error } = await sb.rpc('admin_device_action', { p_device_id: deviceId, p_action: action, p_value: value });
-    if (error) throw error;
-    if (data?.error) throw new Error(data.error);
-    const msgs = { ban:'Device banni', unban:'Device débanni', extend_trial:'Essai prolongé de 7 jours', activate:'Licence activée' };
-    toast('success', msgs[action]||'Action effectuée','');
-    loadUsers();
-  } catch(e) { toast('error','Erreur', e.message); }
-}
-
-async function openUserDetail(deviceId) {
-  openModal('modal-user');
-  document.getElementById('modal-user-body').innerHTML = '<div class="loading-center"><div class="spinner"></div></div>';
-  try {
-    const { data } = await sb.rpc('admin_get_users', { p_limit:1, p_offset:0, p_search:'' });
-    // Chercher dans la liste chargée
-    const { data: d2 } = await sb.from('devices').select('*, licenses(*)').eq('id', deviceId).single();
-    if (!d2) throw new Error('Device introuvable');
-    const lic = d2.licenses?.[0];
-    document.getElementById('modal-user-title').textContent = d2.device_name || d2.mac_address;
-    document.getElementById('modal-user-body').innerHTML = `
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-        <div class="card" style="padding:14px">
-          <div style="font-size:10px;color:var(--t3);margin-bottom:4px">MAC / Clé</div>
-          <div class="mono" style="color:var(--v);font-size:12px">${d2.mac_address}</div>
-          <div class="mono" style="font-weight:700;font-size:18px;letter-spacing:3px">${d2.device_key}</div>
-        </div>
-        <div class="card" style="padding:14px">
-          <div style="font-size:10px;color:var(--t3);margin-bottom:4px">Licence</div>
-          ${statusBadge(lic?.status)}
-          <div style="font-size:12px;margin-top:4px">${lic?.plan_name||'—'}</div>
-          <div style="font-size:10px;color:var(--t3)">${lic?.expires_at?'Expire : '+fmtDate(lic.expires_at):'Illimité'}</div>
-        </div>
-      </div>
-      <div class="table-wrap" style="margin-bottom:16px">
-        <table><tbody>
-          ${[['Appareil',d2.device_name||'—'],['Modèle',d2.device_model||'—'],['Marque',d2.device_brand||'—'],
-             ['Android',d2.android_version||'—'],['App',d2.app_version||'—'],
-             ['Inscrit',d2.created_at?fmtDate(d2.created_at):'—'],
-             ['Vu',d2.last_seen_at?fmtDate(d2.last_seen_at):'Jamais'],
-             ['Statut',d2.is_banned?'<span class="badge b-banned">BANNI</span>':'<span class="badge b-active">ACTIF</span>']
-          ].map(([l,v])=>`<tr><td style="color:var(--t3);font-size:11px;width:35%">${l}</td><td style="font-size:12px">${v}</td></tr>`).join('')}
-        </tbody></table>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${d2.is_banned
-          ? `<button class="btn btn-success btn-sm" onclick="deviceAction('${d2.id}','unban');closeModal('modal-user')">✅ Débannir</button>`
-          : `<button class="btn btn-danger btn-sm" onclick="deviceAction('${d2.id}','ban');closeModal('modal-user')">🚫 Bannir</button>`}
-        <button class="btn btn-ghost btn-sm" onclick="deviceAction('${d2.id}','extend_trial');closeModal('modal-user')">⏳ +7 jours essai</button>
-        <button class="btn btn-primary btn-sm" onclick="deviceAction('${d2.id}','activate','Mensuel');closeModal('modal-user')">✨ Activer 30j</button>
-      </div>
-    `;
-  } catch(e) {
-    document.getElementById('modal-user-body').innerHTML = `<p style="color:var(--r)">${e.message}</p>`;
-  }
-}
-
-async function loadAdminLicenses() {
-  const el = document.getElementById('quick-stats-lic');
-  try {
-    const { data } = await sb.rpc('admin_get_stats');
-    el.innerHTML = `
-      <div class="g3">
-        <div><div style="font-size:10px;color:var(--t3)">Actives</div><div style="font-size:28px;font-weight:800;color:var(--g)">${data.active_devices||0}</div></div>
-        <div><div style="font-size:10px;color:var(--t3)">Essai</div><div style="font-size:28px;font-weight:800;color:var(--gold)">${data.trial_devices||0}</div></div>
-        <div><div style="font-size:10px;color:var(--t3)">Bannis</div><div style="font-size:28px;font-weight:800;color:var(--r)">${data.banned_devices||0}</div></div>
-      </div>
-      <p style="font-size:12px;color:var(--t2);margin-top:16px">Pour gérer les licences individuellement, rendez-vous dans <strong>Utilisateurs</strong> et cliquez sur un device.</p>
-    `;
-  } catch(e) { el.innerHTML = `<p style="color:var(--r)">${e.message}</p>`; }
-}
-
-// ══════════════════════════════════════════════
-// ADMIN — STATS (app_installs + app_sessions)
-// ══════════════════════════════════════════════
-async function loadAStats() {
-  // Reset UI
-  ['st-installs','st-sessions','st-ratio'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = '—';
+/* ═══════════════════════ MODALS ══════════════════════════ */
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function openAddModal() {
+  // Reset form
+  ['add-name','add-url','add-server','add-port','add-user','add-pass'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
   });
-  const tbody = document.getElementById('stats-detail-tbody');
-  if (tbody) tbody.innerHTML = '<tr><td colspan="4"><div class="loading-center"><div class="spinner"></div></div></td></tr>';
-
-  try {
-    // Fetch both counters from Supabase (table: app_stats or similar)
-    // Try fetching from a dedicated stats table first
-    let installs = 0, sessions = 0;
-    let installsUpdated = null, sessionsUpdated = null;
-
-    // Attempt 1: table named app_stats with (key, value) structure
-    const { data: statsRows, error: statsErr } = await sb
-      .from('app_stats')
-      .select('*');
-
-    if (!statsErr && statsRows && statsRows.length) {
-      const installRow = statsRows.find(r => r.key === 'app_installs' || r.name === 'app_installs' || r.metric === 'app_installs');
-      const sessionRow = statsRows.find(r => r.key === 'app_sessions' || r.name === 'app_sessions' || r.metric === 'app_sessions');
-      if (installRow) { installs = parseInt(installRow.value || installRow.count || 0); installsUpdated = installRow.updated_at; }
-      if (sessionRow) { sessions = parseInt(sessionRow.value || sessionRow.count || 0); sessionsUpdated = sessionRow.updated_at; }
-    } else {
-      // Attempt 2: table with columns named app_installs and app_sessions (single row)
-      const { data: row2, error: err2 } = await sb
-        .from('app_stats')
-        .select('app_installs, app_sessions, updated_at')
-        .single();
-
-      if (!err2 && row2) {
-        installs = parseInt(row2.app_installs || 0);
-        sessions = parseInt(row2.app_sessions || 0);
-        installsUpdated = row2.updated_at;
-        sessionsUpdated = row2.updated_at;
-      } else {
-        // Attempt 3: count rows in devices and sessions tables
-        const [{ count: devCount }, { count: sesCount }] = await Promise.all([
-          sb.from('devices').select('*', { count: 'exact', head: true }),
-          sb.from('sessions').select('*', { count: 'exact', head: true })
-        ]);
-        installs = devCount || 0;
-        sessions = sesCount || 0;
-      }
-    }
-
-    const ratio = sessions > 0 && installs > 0 ? (sessions / installs).toFixed(1) : '—';
-
-    // Animate numbers
-    animNum('st-installs', installs);
-    animNum('st-sessions', sessions);
-    const ratioEl = document.getElementById('st-ratio');
-    if (ratioEl) ratioEl.textContent = ratio !== '—' ? ratio + 'x' : '—';
-
-    const iSub = document.getElementById('st-installs-sub');
-    const sSub = document.getElementById('st-sessions-sub');
-    if (iSub) iSub.textContent = installsUpdated ? '↑ Mis à jour ' + fmtDate(installsUpdated) : '↑ Données en direct';
-    if (sSub) sSub.textContent = sessionsUpdated ? '↑ Mis à jour ' + fmtDate(sessionsUpdated) : '↑ Données en direct';
-
-    // Detail table
-    if (tbody) {
-      tbody.innerHTML = [
-        ['app_installs', fmt(installs), "Nombre total d'installations de l'app Flutter", 'app_stats'],
-        ['app_sessions', fmt(sessions), 'Nombre total de sessions démarrées', 'app_stats'],
-        ['ratio sessions/install', ratio !== '—' ? ratio + 'x' : '—', 'Sessions moyennes par utilisateur installé', '(calculé)'],
-      ].map(([m,v,d,t]) => `<tr>
-        <td><span class="mono" style="color:var(--v);font-size:11px">${m}</span></td>
-        <td><strong style="font-size:14px">${v}</strong></td>
-        <td style="color:var(--t2);font-size:12px">${d}</td>
-        <td><span class="badge b-trial" style="font-size:9px">${t}</span></td>
-      </tr>`).join('');
-    }
-
-    // Render charts
-    renderStatsCharts(installs, sessions);
-
-    if (installs === 0 && sessions === 0) {
-      toast('info', 'Données vides', 'Les compteurs sont à 0 — vérifiez votre table app_stats.');
-    }
-
-  } catch(e) {
-    toast('error', 'Erreur stats', e.message);
-    if (tbody) tbody.innerHTML = `<tr><td colspan="4" style="color:var(--r);padding:20px;text-align:center">${esc(e.message)}</td></tr>`;
-  }
+  document.getElementById('add-type').value = 'm3u';
+  toggleAddType();
+  clearMsg('add-msg');
+  openModal('modal-add');
 }
 
-function renderStatsCharts(installs, sessions) {
-  // Bar chart
-  const ctx1 = document.getElementById('ch-stats-bar');
-  if (ctx1) {
-    if (S.charts.statsBar) S.charts.statsBar.destroy();
-    S.charts.statsBar = new Chart(ctx1.getContext('2d'), {
-      type: 'bar',
-      data: {
-        labels: ['Installations', 'Sessions'],
-        datasets: [{
-          data: [installs, sessions],
-          backgroundColor: ['rgba(41,182,246,0.7)', 'rgba(0,230,118,0.7)'],
-          borderRadius: 8,
-          borderSkipped: false,
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: 'rgba(255,255,255,.4)', font: { size: 11, family: 'DM Sans' } } },
-          y: { grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: 'rgba(255,255,255,.4)', font: { size: 10, family: 'DM Sans' } }, beginAtZero: true }
-        }
-      }
-    });
-  }
+// Close on backdrop click
+document.querySelectorAll('.modal-backdrop').forEach(b => {
+  b.addEventListener('click', e => { if (e.target === b) b.classList.remove('open'); });
+});
 
-  // Donut chart
-  const ctx2 = document.getElementById('ch-stats-donut');
-  if (ctx2) {
-    if (S.charts.statsDonut) S.charts.statsDonut.destroy();
-    S.charts.statsDonut = new Chart(ctx2.getContext('2d'), {
-      type: 'doughnut',
-      data: {
-        labels: ['Installations', 'Sessions'],
-        datasets: [{
-          data: [installs, sessions],
-          backgroundColor: ['rgba(41,182,246,0.75)', 'rgba(0,230,118,0.75)'],
-          borderColor: ['transparent', 'transparent'],
-          borderRadius: 4,
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false, cutout: '68%',
-        plugins: {
-          legend: {
-            position: 'bottom',
-            labels: { color: 'rgba(255,255,255,.5)', font: { size: 11 }, padding: 12 }
-          }
-        }
-      }
-    });
-  }
+/* ═══════════════════════ HELPERS ════════════════════════ */
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtNum(n) { return n >= 1000 ? (n/1000).toFixed(1)+'k' : String(n); }
+
+function showMsg(id, text, type = 'error') {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text; el.className = 'msg ' + type + ' show';
+}
+function clearMsg(id) {
+  const el = document.getElementById(id);
+  if (el) { el.className = 'msg'; el.textContent = ''; }
+}
+function setLoading(btnId, on) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.disabled = on;
+  btn.classList.toggle('loading', on);
 }
 
-// ══════════════════════════════════════════════
-// CHARTS (user)
-// ══════════════════════════════════════════════
-function renderLicenseChart(lic) {
-  const ctx = document.getElementById('ch-license').getContext('2d');
-  if (S.charts.lic) S.charts.lic.destroy();
-  const exp = lic.expires_at?new Date(lic.expires_at):null;
-  const sta = lic.starts_at?new Date(lic.starts_at):new Date();
-  const now = new Date();
-  let used=1,rem=99;
-  if (exp) { const t=exp-sta, e=now-sta; used=Math.max(0,Math.min(100,(e/t)*100)); rem=100-used; }
-  const col = lic.status==='active'?'#7B2FFF':lic.status==='trial'?'#ffd740':'#ff2d55';
-  S.charts.lic = new Chart(ctx,{type:'doughnut',data:{labels:['Utilisé','Restant'],datasets:[{data:[used,rem],backgroundColor:[col,'rgba(255,255,255,.05)'],borderColor:['transparent','transparent'],borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.label}: ${Math.round(c.raw)}%`}}}}});
-}
-function renderContentChart(live, movies, series) {
-  const ctx = document.getElementById('ch-content').getContext('2d');
-  if (S.charts.content) S.charts.content.destroy();
-  S.charts.content = new Chart(ctx,{type:'bar',data:{labels:['Live','Films','Séries'],datasets:[{data:[live,movies,series],backgroundColor:['rgba(123,47,255,.7)','rgba(255,45,85,.7)','rgba(33,150,243,.7)'],borderRadius:7,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'rgba(255,255,255,.35)'}},y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'rgba(255,255,255,.35)'},beginAtZero:true}}}});
-}
+/* ═══════════════════════ START ══════════════════════════ */
+sb.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_OUT') window.location.href = AUTH_URL;
+});
 
-// ══════════════════════════════════════════════
-// MODALS
-// ══════════════════════════════════════════════
-function openModal(id) { document.getElementById(id).classList.add('open'); document.body.style.overflow='hidden'; }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); document.body.style.overflow=''; }
-document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if(e.target===o) closeModal(o.id); }));
-
-// ══════════════════════════════════════════════
-// MOBILE SIDEBAR
-// ══════════════════════════════════════════════
-function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('mob-open');
-  document.getElementById('sb-overlay').classList.toggle('show');
-}
-function closeSidebar() {
-  document.getElementById('sidebar').classList.remove('mob-open');
-  document.getElementById('sb-overlay').classList.remove('show');
-}
-
-// ══════════════════════════════════════════════
-// TOAST
-// ══════════════════════════════════════════════
-const T_ICONS = { success:'✅', error:'❌', info:'ℹ️', warning:'⚠️' };
-function toast(type, title, msg='', dur=4000) {
-  const c = document.getElementById('toasts');
-  const el = document.createElement('div');
-  el.className = `toast toast-${type}`;
-  el.innerHTML = `<div class="t-icon">${T_ICONS[type]||'ℹ️'}</div><div class="t-text"><strong>${esc(title)}</strong>${msg?`<small>${esc(msg)}</small>`:''}</div>`;
-  c.appendChild(el);
-  requestAnimationFrame(() => el.classList.add('show'));
-  setTimeout(() => { el.classList.add('hide'); setTimeout(()=>el.remove(),350); }, dur);
-}
-
-// ══════════════════════════════════════════════
-// UTILS
-// ══════════════════════════════════════════════
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function fmt(n) { return (n||0).toLocaleString('fr-FR'); }
-function fmtDate(iso) { if(!iso) return '—'; return new Date(iso).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
-function fmtExpiry(iso) {
-  if (!iso) return 'Illimité ♾️';
-  const d = new Date(iso), diff = d-new Date();
-  if (diff<0) return 'Expiré ❌';
-  const days = Math.ceil(diff/86400000);
-  return `${days}j (${d.toLocaleDateString('fr-FR')})`;
-}
-function statusBadge(status, id='') {
-  const M = { active:['b-active','● ACTIF'], trial:['b-trial','◌ ESSAI'], expired:['b-expired','✕ EXPIRÉ'], suspended:['b-suspended','⏸ SUSPENDU'], banned:['b-banned','⛔ BANNI'] };
-  const [cls,lbl] = M[status]||['b-trial', status?.toUpperCase()||'—'];
-  return `<span class="badge ${cls}"${id?` id="${id}"`:''}>${lbl}</span>`;
-}
-function animNum(id, target) {
-  const el = document.getElementById(id); if(!el) return;
-  const start = parseInt(el.textContent.replace(/\D/g,''))||0;
-  anime({ targets:{val:start}, val:target, round:1, duration:800, easing:'easeOutCubic', update:(a)=>{ el.textContent=Math.round(a.animations[0].currentValue).toLocaleString('fr-FR'); } });
-}
-function copyEl(id, msg) {
-  const t = document.getElementById(id)?.textContent; if(!t) return;
-  navigator.clipboard.writeText(t).then(()=>toast('success',msg,t));
-}
-function fmtMac(input) {
-  let v = input.value.replace(/[^0-9A-Fa-f]/g,'').toUpperCase();
-  input.value = v.match(/.{1,2}/g)?.join(':').substring(0,17)||'';
-}
+init();
 </script>
 </body>
 </html>
