@@ -658,7 +658,7 @@
         <li><span class="check">✓</span> 1 appareil (Device Key)</li>
         <li class="muted"><span class="cross">–</span> <span>Mises à jour prioritaires</span></li>
       </ul>
-      <button class="plan-btn outline" onclick="openContact('Annuel 2,99€')" data-umami-event="pricing-mensuel">Activer pour 2,99€/an</button>
+      <button class="plan-btn outline" onclick="startCheckout('yearly')" data-plan="yearly">Activer pour 2,99€/an</button>
     </div>
 
     <div class="plan-card featured" data-ani="scale" data-delay="120">
@@ -675,7 +675,7 @@
         <li><span class="check">✓</span> 1 appareil (Device Key)</li>
         <li><span class="check">✓</span> Mises à jour à vie</li>
       </ul>
-      <button class="plan-btn solid" onclick="openContact('Licence à vie 4,99€')" data-umami-event="pricing-lifetime">Acheter la licence à vie</button>
+      <button class="plan-btn solid" data-plan="lifetime" onclick="startCheckout('lifetime')">Acheter la licence à vie</button>
     </div>
   </div>
 
@@ -921,9 +921,43 @@
   }
   window.addEventListener('pagehide', _sendSiteSession);
   window.addEventListener('beforeunload', _sendSiteSession);
+  async function startCheckout(plan) {
+  const btn = document.querySelector(`[data-plan="${plan}"]`)
+  btn.disabled = true
+  btn.textContent = 'Chargement...'
+
+  // Récupère la session Supabase si connecté
+  const { data: { session } } = await supabase.auth.getSession()
+
+  // Demande la device_key si pas connecté
+  const deviceKey = prompt('Entrez la clé de votre appareil\n(visible dans ARICH IPTV → Paramètres → Infos appareil)')
+  if (!deviceKey) { btn.disabled = false; btn.textContent = 'Acheter'; return }
+
+  const res = await fetch('https://aynucieohuowgkwyftiy.supabase.co/functions/v1/create-checkout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      plan,
+      deviceKey: deviceKey.trim().toUpperCase(),
+      userId:  session?.user?.id  || null,
+      email:   session?.user?.email || null,
+    })
+  })
+
+  const data = await res.json()
+  if (data.error) {
+    alert('❌ ' + data.error)
+    btn.disabled = false
+    btn.textContent = 'Acheter'
+    return
+  }
+
+  window.location.href = data.url
+}
 </script>
 </body>
 </html>
+
 
 
 
