@@ -290,47 +290,59 @@ input.err:focus { box-shadow:0 0 0 3.5px rgba(255,107,138,0.13); }
 const SUPABASE_URL  = 'https://aynucieohuowgkwyftiy.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5bnVjaWVvaHVvd2drd3lmdGl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyOTIxMDMsImV4cCI6MjA4Nzg2ODEwM30.H43CVcyzEuYBQfBIlkn16r5uk768isHr4DeLduo1ETk';
 
-// ✅ CETTE PAGE est la redirect URL (pas manage-playlist !)
-const THIS_PAGE_URL  = 'https://arich.fr/auth.html';
-// Deep link Android vers l'app Flutter
-const APP_DEEP_LINK  = 'com.arich.iptv://auth-callback';
-// Fallback web si l'utilisateur n'est pas sur mobile/app
-const WEB_REDIRECT   = 'https://arich.fr/manage-playlist.html';
+const THIS_PAGE_URL = 'https://arich.fr/auth.html';
+const APP_DEEP_LINK = 'com.arich.iptv://auth-callback';
+const WEB_REDIRECT  = 'https://arich.fr/manage-playlist.html';
 
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 
-/* ════════════════════════════ REDIRECT LOGIC ════════════════════════════
-   Logique :
-   1. Si Android → tente le deep link com.arich.iptv://auth-callback
-      → L'app Flutter capte ce deep link, le client Supabase Flutter
-        vérifie la session (onAuthStateChange SIGNED_IN) et connecte.
-   2. Si desktop/iOS → redirige vers la page web manage-playlist
-   3. Bouton manuel affiché si l'app ne s'est pas ouverte après 2.5s
-═══════════════════════════════════════════════════════════════════════════ */
+/* ════════════════════════════ HELPERS ═══════════════════════════════════ */
 function isAndroid() {
   return /android/i.test(navigator.userAgent);
 }
 
+/**
+ * ✅ FIX PRINCIPAL
+ * Construit le deep link en transmettant TOUS les paramètres Supabase
+ * (access_token, refresh_token, type, etc.) présents dans le hash ou la query.
+ *
+ * AVANT (cassé) :
+ *   window.location.href = 'com.arich.iptv://auth-callback'
+ *   → Flutter reçoit une URL vide, pas de token, pas de session.
+ *
+ * APRÈS (corrigé) :
+ *   window.location.href = 'com.arich.iptv://auth-callback#access_token=xxx&...'
+ *   → Flutter reçoit le token complet, Supabase SDK établit la session.
+ */
+function buildAppDeepLink() {
+  const hash   = window.location.hash   || '';   // #access_token=xxx&...
+  const search = window.location.search || '';   // ?code=xxx (PKCE fallback)
+  // Priorité au hash (implicit flow), fallback sur query string (PKCE)
+  return APP_DEEP_LINK + (hash || search);
+}
+
+/* ════════════════════════════ REDIRECT LOGIC ════════════════════════════ */
 function redirectAfterAuth() {
   const overlay = document.getElementById('redirect-overlay');
   const page    = document.getElementById('main-page');
   const sub     = document.getElementById('redirect-sub');
 
-  // Afficher overlay
   if (overlay) overlay.classList.add('show');
   if (page)    page.style.display = 'none';
 
   if (isAndroid() || sessionStorage.getItem('arich_from_app') === '1') {
-    // Mode app Android : deep link vers Flutter
     if (sub) sub.textContent = "Retour vers l'application ARICH IPTV…";
 
-    // Déclencher le deep link
+    // ✅ FIX : on passe le deep link AVEC les tokens
+    const deepLink = buildAppDeepLink();
+    console.log('[auth] Redirecting to app:', deepLink.substring(0, 80) + '...');
+
     setTimeout(() => {
-      window.location.href = APP_DEEP_LINK;
+      window.location.href = deepLink;
     }, 600);
 
-    // Si l'app ne s'ouvre pas → afficher bouton manuel
+    // Bouton manuel si l'app ne s'ouvre pas
     setTimeout(() => {
       const btn = document.getElementById('btn-open-app');
       if (btn) btn.style.display = 'flex';
@@ -338,48 +350,39 @@ function redirectAfterAuth() {
     }, 2800);
 
   } else {
-    // Mode web desktop
     if (sub) sub.textContent = "Redirection vers votre espace…";
     setTimeout(() => { window.location.href = WEB_REDIRECT; }, 1500);
   }
 }
 
+// Bouton manuel "Ouvrir l'application"
 function openApp() {
-  window.location.href = APP_DEEP_LINK;
+  window.location.href = buildAppDeepLink();
 }
 
-/* ════════════════════════════ SESSION CHECK ═════════════════════════════
-   ✅ FIX PRINCIPAL :
-   Supabase redirige vers arich.fr/auth.html#access_token=xxx
-   On parse le hash ici pour établir la session, PUIS on redirige.
-═══════════════════════════════════════════════════════════════════════════ */
+/* ════════════════════════════ SESSION CHECK ═════════════════════════════ */
 async function checkSession() {
-  const hash = window.location.hash;
+  const hash   = window.location.hash;
+  const search = window.location.search;
 
-  if (hash && hash.includes('access_token')) {
-    const params = new URLSearchParams(hash.substring(1));
-    const type   = params.get('type');
+  // Cas reset mot de passe
+  if (hash && hash.includes('type=recovery')) {
+    showView('reset');
+    return;
+  }
 
-    // Lien reset mot de passe
-    if (type === 'recovery') {
-      showView('reset');
-      return;
-    }
+  // Cas OAuth callback : hash avec access_token (implicit) ou query avec code (PKCE)
+  const hasToken = (hash && hash.includes('access_token')) ||
+                   (search && search.includes('code='));
 
-    // OAuth Google : Supabase parse le hash automatiquement
-    // On attend un court instant puis on vérifie
-    await new Promise(r => setTimeout(r, 400));
+  if (hasToken) {
+    // Laisser le SDK parser le hash/query et établir la session
+    await new Promise(r => setTimeout(r, 500));
     const { data: { session } } = await sb.auth.getSession();
     if (session) {
       redirectAfterAuth();
       return;
     }
-  }
-
-  // Session déjà active ? Ne pas rediriger sauf si on vient d'un flow OAuth
-  const { data: { session } } = await sb.auth.getSession();
-  if (session && hash.includes('access_token')) {
-    redirectAfterAuth();
   }
 }
 
@@ -471,9 +474,6 @@ function translateError(msg) {
 }
 
 /* ════════════════════════════ AUTH ACTIONS ══════════════════════════════ */
-
-// ✅ GOOGLE : redirectTo = THIS_PAGE_URL (cette page = arich.fr/auth.html)
-// Supabase redirige ici avec #access_token → checkSession() capte et redirige vers l'app
 async function loginGoogle() {
   if (isAndroid()) sessionStorage.setItem('arich_from_app', '1');
   const btns = document.querySelectorAll('#btn-google, .btn-ghost');
@@ -481,7 +481,7 @@ async function loginGoogle() {
   const { error } = await sb.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: THIS_PAGE_URL,   // ← LE FIX
+      redirectTo: THIS_PAGE_URL,
       queryParams: { access_type: 'offline', prompt: 'consent' }
     }
   });
@@ -489,7 +489,6 @@ async function loginGoogle() {
     btns.forEach(b => { b.disabled=false; b.classList.remove('loading'); });
     showMsg(currentView, translateError(error.message));
   }
-  // Succès → navigateur redirige automatiquement
 }
 
 async function doLogin() {
