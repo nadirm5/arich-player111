@@ -15,9 +15,10 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #0a0a0a;
             color: #ffffff;
-            line-height: 1.6;
+            line-height: 1.5;
         }
         
+        /* Header */
         .header {
             background: linear-gradient(135deg, #0a0a0a, #0f1a2a);
             padding: 20px;
@@ -54,6 +55,7 @@
             color: #888;
         }
         
+        /* Navigation */
         .nav {
             display: flex;
             background: #111;
@@ -79,6 +81,7 @@
             color: white;
         }
         
+        /* Sections */
         .section {
             padding: 40px 20px;
             max-width: 1200px;
@@ -99,6 +102,7 @@
             color: transparent;
         }
         
+        /* Cartes */
         .card-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -181,6 +185,7 @@
             transform: scale(1.05);
         }
         
+        /* Lecteur */
         .player-container {
             background: #000;
             border-radius: 15px;
@@ -215,38 +220,14 @@
             background: #00BFFF;
         }
         
-        .expired-screen {
-            text-align: center;
-            padding: 60px 20px;
-            min-height: 80vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .expired-card {
-            max-width: 500px;
-            margin: 0 auto;
-            background: #111;
-            border-radius: 30px;
-            padding: 40px;
-        }
-        
-        .expired-card h2 {
-            color: #00BFFF;
-            margin: 20px 0;
-        }
-        
-        .license-input {
-            width: 100%;
-            padding: 15px;
-            background: #1a1a2a;
-            border: 1px solid #333;
-            border-radius: 10px;
-            color: white;
-            font-size: 16px;
-            text-align: center;
-            margin: 20px 0;
+        .info-banner {
+            background: rgba(0,191,255,0.1);
+            border-left: 3px solid #00BFFF;
+            padding: 10px 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #aaa;
         }
         
         .loading {
@@ -255,14 +236,30 @@
             color: #00BFFF;
         }
         
-        .trial-badge {
-            background: #00BFFF;
+        .error {
+            text-align: center;
+            padding: 20px;
+            color: #ff4757;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px;
+            background: #1a1a2a;
+            border: 1px solid #333;
+            border-radius: 10px;
             color: white;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            display: inline-block;
-            margin-bottom: 15px;
+            margin: 10px 0;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #00BFFF, #1E90FF);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -272,7 +269,7 @@
     <div class="logo-container">
         <img src="logo.png" class="logo-img" alt="SKY TV" onerror="this.src='https://via.placeholder.com/60x60?text=SKY'">
         <div class="logo-text">
-            <h1>☁️ SKY TV</h1>
+            <h1>SKY TV</h1>
             <p>PREMIUM IPTV PLAYER</p>
         </div>
     </div>
@@ -284,90 +281,58 @@
     <div class="nav-item" onclick="switchTab('info')">ℹ️ INFOS</div>
 </div>
 
-<!-- Zone principale (cachée si essai expiré) -->
-<div id="mainApp">
-    <div id="playerTab" class="section">
-        <div style="text-align: center;">
-            <div class="trial-badge" id="trialDaysBadge">🎁 Période d'essai</div>
-        </div>
-        
-        <div class="player-container">
-            <video id="videoPlayer" controls></video>
-        </div>
-        
-        <div class="info-banner">
-            💡 Collez votre lien M3U ci-dessous ou connectez-vous en Xtream
-        </div>
-        
-        <input type="text" id="m3uInput" placeholder="Lien M3U ou URL du serveur" style="width:100%; padding:12px; background:#1a1a2a; border:1px solid #333; border-radius:10px; color:white; margin:10px 0;">
-        
-        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <button onclick="loadChannels()" class="btn" style="flex:1;">📋 CHARGER</button>
-            <button onclick="playStream()" class="btn" style="flex:1;">▶️ PLAY</button>
-            <button onclick="stopStream()" class="btn btn-outline" style="flex:1;">⏹️ STOP</button>
-        </div>
-        
-        <div id="channelsList" class="channels-list">
-            <div class="loading">✨ Entrez votre lien M3U</div>
-        </div>
+<div id="playerTab" class="section">
+    <div class="player-container">
+        <video id="videoPlayer" controls></video>
     </div>
     
-    <div id="pricingTab" class="section" style="display: none;">
-        <h2 class="section-title">💰 <span>Devenir Premium</span></h2>
-        <div class="card-grid">
-            <div class="card">
-                <h3>📅 Licence Annuelle</h3>
-                <div class="price">4,99€ <small>/an</small></div>
-                <p>✅ Accès complet au lecteur</p>
-                <p>✅ Support prioritaire</p>
-                <p>✅ Mises à jour incluses</p>
-                <a href="https://wa.me/213558127271?text=Bonjour%2C%20je%20souhaite%20acheter%20la%20licence%20SKY%20TV%20annuelle" class="btn" style="margin-top: 20px; display: block; text-align: center;">💬 Acheter sur WhatsApp</a>
-            </div>
-            <div class="card">
-                <h3>🔥 Licence À Vie</h3>
-                <div class="price">9,99€ <small>une fois</small></div>
-                <p>✅ Accès complet au lecteur</p>
-                <p>✅ Support prioritaire</p>
-                <p>✅ Mises à jour à vie</p>
-                <p>✅ Licence transférable</p>
-                <a href="https://wa.me/213558127271?text=Bonjour%2C%20je%20souhaite%20acheter%20la%20licence%20SKY%20TV%20à%20vie" class="btn" style="margin-top: 20px; display: block; text-align: center;">💬 Acheter sur WhatsApp</a>
-            </div>
-        </div>
-        <div class="info-banner" style="margin-top: 20px; text-align: center;">
-            💡 Après paiement, envoyez votre Device Key pour activer votre licence.
-        </div>
+    <div class="info-banner">
+        💡 Collez votre lien M3U ci-dessous
     </div>
     
-    <div id="infoTab" class="section" style="display: none;">
-        <h2 class="section-title">📱 <span>À propos</span></h2>
+    <input type="text" id="m3uInput" placeholder="https://exemple.com/playlist.m3u">
+    
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <button onclick="loadChannels()" style="flex:1;">📋 CHARGER</button>
+        <button onclick="playStream()" style="flex:1;">▶️ PLAY</button>
+        <button onclick="stopStream()" style="flex:1;">⏹️ STOP</button>
+    </div>
+    
+    <div id="channelsList" class="channels-list">
+        <div class="loading">✨ Entrez votre lien M3U</div>
+    </div>
+</div>
+
+<div id="pricingTab" class="section" style="display: none;">
+    <h2 class="section-title">💰 <span>Devenir Premium</span></h2>
+    <div class="card-grid">
         <div class="card">
-            <h3>SKY TV - Lecteur IPTV Premium</h3>
-            <p>SKY TV est un lecteur multimédia qui vous permet de regarder vos chaînes IPTV. Compatible avec les liens M3U et les codes Xtream.</p>
-            <p style="margin-top: 15px;"><strong>📧 Contact :</strong> shoppingstreamtv@gmail.com</p>
-            <p><strong>📱 WhatsApp :</strong> +213 55 81 27 271</p>
+            <h3>📅 Licence Annuelle</h3>
+            <div class="price">4,99€ <small>/an</small></div>
+            <p>✅ Accès complet au lecteur</p>
+            <p>✅ Support prioritaire</p>
+            <p>✅ Mises à jour incluses</p>
+            <a href="https://wa.me/213558127271?text=Bonjour%2C%20je%20souhaite%20acheter%20la%20licence%20SKY%20TV%20annuelle" class="btn" style="margin-top: 20px; display: block; text-align: center;">💬 Acheter sur WhatsApp</a>
+        </div>
+        <div class="card">
+            <h3>🔥 Licence À Vie</h3>
+            <div class="price">9,99€ <small>une fois</small></div>
+            <p>✅ Accès complet au lecteur</p>
+            <p>✅ Support prioritaire</p>
+            <p>✅ Mises à jour à vie</p>
+            <p>✅ Licence transférable</p>
+            <a href="https://wa.me/213558127271?text=Bonjour%2C%20je%20souhaite%20acheter%20la%20licence%20SKY%20TV%20à%20vie" class="btn" style="margin-top: 20px; display: block; text-align: center;">💬 Acheter sur WhatsApp</a>
         </div>
     </div>
 </div>
 
-<!-- Écran d'expiration -->
-<div id="expiredScreen" style="display: none;">
-    <div class="expired-screen">
-        <div class="expired-card">
-            <div style="font-size: 80px;">⏰</div>
-            <h2>Essai gratuit terminé</h2>
-            <p style="color: #aaa;">Votre période d'essai de 15 jours est expirée.</p>
-            <p style="color: #aaa;">Pour continuer à utiliser SKY TV, achetez une licence.</p>
-            
-            <div style="background: #1a1a2a; padding: 20px; border-radius: 15px; margin: 20px 0;">
-                <h3 style="color: #00BFFF;">💰 Licences SKY TV</h3>
-                <div style="margin: 15px 0;"><strong>📅 Annuel : 4,99€</strong></div>
-                <div style="margin: 15px 0;"><strong>🔥 À vie : 9,99€</strong></div>
-                <a href="https://wa.me/213558127271" target="_blank" class="btn" style="display: block; text-align: center;">💬 Acheter sur WhatsApp</a>
-            </div>
-            
-            <input type="text" id="licenseCode" class="license-input" placeholder="Entrez votre code d'activation">
-            <button onclick="activateLicense()" class="btn" style="width: 100%;">🔓 Activer ma licence</button>
-        </div>
+<div id="infoTab" class="section" style="display: none;">
+    <h2 class="section-title">📱 <span>À propos</span></h2>
+    <div class="card">
+        <h3>SKY TV - Lecteur IPTV Premium</h3>
+        <p>SKY TV est un lecteur multimédia pour regarder vos chaînes IPTV. Compatible avec les liens M3U et les codes Xtream.</p>
+        <p style="margin-top: 15px;"><strong>📧 Email :</strong> shoppingstreamtv@gmail.com</p>
+        <p><strong>📱 WhatsApp :</strong> +213 55 81 27 271</p>
     </div>
 </div>
 
@@ -376,75 +341,6 @@
 </a>
 
 <script>
-    // ========== SYSTÈME D'ESSAI 15 JOURS ==========
-    const TRIAL_KEY = 'skytv_trial_start';
-    const TRIAL_DAYS = 15;
-    
-    // Codes d'activation valides (à générer et envoyer par WhatsApp)
-    const VALID_CODES = {
-        "SKY-LIFETIME-2026": "lifetime",
-        "SKY-YEARLY-2026": "yearly"
-    };
-    
-    function checkTrial() {
-        // Vérifier si une licence est déjà activée
-        const savedLicense = localStorage.getItem('skytv_license');
-        if (savedLicense && VALID_CODES[savedLicense]) {
-            return true; // Licence valide
-        }
-        
-        const startDate = localStorage.getItem(TRIAL_KEY);
-        
-        if (!startDate) {
-            localStorage.setItem(TRIAL_KEY, Date.now().toString());
-            updateTrialDisplay(15);
-            return true;
-        }
-        
-        const start = new Date(parseInt(startDate));
-        const now = new Date();
-        const daysPassed = Math.floor((now - start) / (1000 * 60 * 60 * 24));
-        const daysLeft = TRIAL_DAYS - daysPassed;
-        
-        updateTrialDisplay(daysLeft);
-        
-        if (daysPassed > TRIAL_DAYS) {
-            document.getElementById('mainApp').style.display = 'none';
-            document.getElementById('expiredScreen').style.display = 'block';
-            return false;
-        }
-        
-        return true;
-    }
-    
-    function updateTrialDisplay(daysLeft) {
-        const badge = document.getElementById('trialDaysBadge');
-        if (badge) {
-            if (daysLeft > 0) {
-                badge.innerHTML = `🎁 Essai gratuit : ${daysLeft} jour${daysLeft > 1 ? 's' : ''} restants`;
-                badge.style.background = "#00BFFF";
-            } else {
-                badge.innerHTML = "⚠️ Essai expiré";
-                badge.style.background = "#ff4757";
-            }
-        }
-    }
-    
-    function activateLicense() {
-        const code = document.getElementById('licenseCode').value.trim().toUpperCase();
-        
-        if (VALID_CODES[code]) {
-            localStorage.setItem('skytv_license', code);
-            localStorage.setItem('skytv_license_type', VALID_CODES[code]);
-            localStorage.removeItem(TRIAL_KEY); // Reset l'essai
-            alert('✅ Licence activée avec succès ! Redémarrage...');
-            location.reload();
-        } else {
-            alert('❌ Code d\'activation invalide. Vérifiez et réessayez.');
-        }
-    }
-    
-    // ========== FONCTIONS LECTEUR ==========
     let channels = [];
     let currentChannel = null;
     
@@ -524,9 +420,6 @@
         document.getElementById('pricingTab').style.display = tab === 'pricing' ? 'block' : 'none';
         document.getElementById('infoTab').style.display = tab === 'info' ? 'block' : 'none';
     }
-    
-    // Vérification de l'essai au chargement
-    checkTrial();
 </script>
 
 </body>
